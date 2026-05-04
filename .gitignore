@@ -1,0 +1,17 @@
+# Dependencies
+node_modules
+dist
+*.local
+
+# Editor directories and files
+.idea
+.DS_Store
+
+# Generted files
+*.tsbuildinfo
+.husky/
+vite.config.js
+vite.config.d.js
+
+# Project specific
+example/

@@ -1,0 +1,33 @@
+.card {
+  background: var(--color-card);
+  padding: var(--spacing-6);
+  border-radius: var(--border-radius-2xl);
+  border: 1px solid var(--color-border);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-block-end: var(--spacing-3);
+}
+
+.title {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.iconContainer {
+  background: var(--color-bg);
+  padding: var(--spacing-2);
+  border-radius: var(--border-radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.value {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+}

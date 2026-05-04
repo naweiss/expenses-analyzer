@@ -1,0 +1,171 @@
+.tableWrapper {
+  margin-block-start: 1rem;
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  max-block-size: 18.75rem; /* 300px max height with scroll */
+  overflow-y: auto;
+}
+
+.table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  text-align: start;
+}
+
+.table thead {
+  background: var(--color-bg);
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 10;
+}
+
+.table th {
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-block-end: 1px solid var(--color-border);
+  text-transform: uppercase;
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.025em;
+  /* Explicitly inherit alignment to avoid browser-default centering */
+  text-align: inherit;
+}
+
+.table td {
+  padding: 0.75rem 1rem;
+  border-block-end: 1px solid var(--color-border);
+  color: var(--color-text-main);
+}
+
+.table tr:last-child td {
+  border-block-end: none;
+}
+
+.table tr:hover td {
+  background: rgba(248, 250, 252, 0.5);
+}
+
+.amountCol,
+.amountCell {
+  /* Aligned to start to match all other columns as requested */
+  text-align: start;
+}
+
+.dateCell {
+  white-space: nowrap;
+  color: var(--color-text-muted) !important;
+}
+
+.descCell {
+  font-weight: 500;
+}
+
+.descContent {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.categoryCell {
+  padding: 0.5rem 1rem !important;
+}
+
+.categoryTag {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.amountCell {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  /* Use Inter (main font) with tabular nums for cleaner look than monospace */
+  font-family: var(--font-family);
+  font-size: 0.9375rem;
+}
+
+.tooltipWrapper {
+  display: inline-flex;
+  position: relative;
+  cursor: help;
+}
+
+.infoIcon {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+  transition: all 0.2s;
+}
+
+.tooltipWrapper:hover .infoIcon {
+  color: var(--color-primary);
+  opacity: 1;
+}
+
+.tooltipContent {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.625rem;
+  background: #1e293b;
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  white-space: normal;
+  width: max-content;
+  max-width: 15rem;
+  z-index: 50;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.tooltipContent::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #1e293b;
+}
+
+.tooltipWrapper:hover .tooltipContent {
+  opacity: 1;
+  visibility: visible;
+}
+
+:global([dir='rtl']) .tooltipContent {
+  text-align: right;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .table {
+    font-size: 0.8125rem;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .categoryTag {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.375rem;
+  }
+
+  .amountCell {
+    font-size: 0.8125rem;
+  }
+}
