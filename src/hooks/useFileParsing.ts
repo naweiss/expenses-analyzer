@@ -3,6 +3,7 @@ import { useExpenseData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useDashboardUI, ProcessingFile } from '../context/UIContext';
 import { parseCSV, CSVFile } from '../utils/csvParser';
+import { parsePDF } from '../utils/pdfParser';
 
 export type { ProcessingFile };
 
@@ -38,11 +39,23 @@ export const useFileParsing = () => {
           acceptedFiles.map(async (file, index) => {
             const processingId = newProcessingFiles[index].id;
             try {
-              const res = await parseCSV(file, (pct) => updateProgress(processingId, pct));
-              allParsedFiles.push(...res.files);
-              incomingCategoryRules = { ...incomingCategoryRules, ...res.categoryRules };
-              incomingNotesRules = { ...incomingNotesRules, ...res.notesRules };
-              successfulIds.push(processingId);
+              if (file.name.toLowerCase().endsWith('.pdf')) {
+                const transactions = await parsePDF(file, (pct) =>
+                  updateProgress(processingId, pct),
+                );
+                allParsedFiles.push({
+                  id: crypto.randomUUID(),
+                  name: file.name,
+                  transactions,
+                });
+                successfulIds.push(processingId);
+              } else {
+                const res = await parseCSV(file, (pct) => updateProgress(processingId, pct));
+                allParsedFiles.push(...res.files);
+                incomingCategoryRules = { ...incomingCategoryRules, ...res.categoryRules };
+                incomingNotesRules = { ...incomingNotesRules, ...res.notesRules };
+                successfulIds.push(processingId);
+              }
             } catch (err) {
               const message = err instanceof Error ? err.message : 'Failed to parse file';
               setProcessingFiles((prev) =>

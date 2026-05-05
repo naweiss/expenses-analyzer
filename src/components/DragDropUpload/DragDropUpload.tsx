@@ -14,7 +14,10 @@ const DragDropUpload: React.FC = () => {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFilesDrop,
-    accept: { 'text/csv': ['.csv'] },
+    accept: {
+      'text/csv': ['.csv'],
+      'application/pdf': ['.pdf'],
+    },
   });
 
   return (
