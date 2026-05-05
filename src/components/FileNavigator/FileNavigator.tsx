@@ -21,6 +21,7 @@ const FileNavigator: React.FC = () => {
     onDrop: handleFilesDrop,
     accept: {
       'text/csv': ['.csv'],
+      'application/pdf': ['.pdf'],
     },
     noClick: true,
   });
