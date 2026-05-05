@@ -1,17 +1,18 @@
 import React, { useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { FileText, Plus, X, Layers } from 'lucide-react';
+import { FileText, Plus, X, Layers, Loader2, Download } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useExpenseData } from '../../context/DataContext';
 import { useDashboardUI } from '../../context/UIContext';
 import { useFileParsing } from '../../hooks/useFileParsing';
+import { exportTransactionsToCSV } from '../../utils/csvExporter';
 import styles from './FileNavigator.module.css';
 
 const FileNavigator: React.FC = () => {
   const { translation } = useLanguage();
-  const { files, removeFile } = useExpenseData();
+  const { files, removeFile, allTransactions } = useExpenseData();
   const { currentFileIndex, setCurrentFileIndex } = useDashboardUI();
-  const { handleFilesDrop } = useFileParsing();
+  const { handleFilesDrop, processingFiles } = useFileParsing();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -19,6 +20,7 @@ const FileNavigator: React.FC = () => {
     onDrop: handleFilesDrop,
     accept: {
       'text/csv': ['.csv'],
+      'application/pdf': ['.pdf'],
     },
     noClick: true,
   });
@@ -64,6 +66,18 @@ const FileNavigator: React.FC = () => {
               </button>
             </div>
           ))}
+
+          {processingFiles.map((file) => (
+            <div key={file.id} className={`${styles.navBoxWrapper} ${styles.processing}`}>
+              <div className={styles.navBox}>
+                <Loader2 size={18} className={styles.spinner} />
+                <span className={styles.fileName}>{file.name}</span>
+                <div className={styles.progressContainer}>
+                  <div className={styles.progressBar} style={{ width: `${file.progress}%` }} />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         <button
@@ -72,6 +86,17 @@ const FileNavigator: React.FC = () => {
         >
           <Plus size={20} />
         </button>
+
+        {allTransactions.length > 0 && (
+          <button
+            className={`${styles.navBox} ${styles.exportBox} ${styles.staticBtn}`}
+            onClick={() => exportTransactionsToCSV(allTransactions)}
+            title={translation.exportCSV}
+          >
+            <Download size={18} />
+            <span className={styles.btnText}>{translation.exportCSV}</span>
+          </button>
+        )}
       </div>
 
       {isDragActive && (

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, X } from 'lucide-react';
+import { Upload, FileText, X, Loader2 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useExpenseData } from '../../context/DataContext';
 import { useFileParsing } from '../../hooks/useFileParsing';
@@ -9,11 +9,14 @@ import styles from './DragDropUpload.module.css';
 const DragDropUpload: React.FC = () => {
   const { translation } = useLanguage();
   const { files: uploadedFiles, removeFile } = useExpenseData();
-  const { handleFilesDrop } = useFileParsing();
+  const { handleFilesDrop, processingFiles } = useFileParsing();
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFilesDrop,
-    accept: { 'text/csv': ['.csv'] },
+    accept: {
+      'text/csv': ['.csv'],
+      'application/pdf': ['.pdf'],
+    },
   });
 
   return (
@@ -28,12 +31,26 @@ const DragDropUpload: React.FC = () => {
         <span>{translation.formatHint}</span>
       </div>
 
-      {uploadedFiles.length > 0 && (
+      {(uploadedFiles.length > 0 || processingFiles.length > 0) && (
         <div className={styles.fileList}>
           <h3>
-            {translation.uploadedFiles} ({uploadedFiles.length})
+            {translation.uploadedFiles} ({uploadedFiles.length + processingFiles.length})
           </h3>
           <div className={styles.filesGrid}>
+            {/* Processing Files */}
+            {processingFiles.map((file) => (
+              <div key={file.id} className={`${styles.fileCard} ${styles.processing}`}>
+                <Loader2 size={20} className={styles.spinner} />
+                <div className={styles.fileInfo}>
+                  <span title={file.name}>{file.name}</span>
+                  <div className={styles.progressContainer}>
+                    <div className={styles.progressBar} style={{ width: `${file.progress}%` }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Completed Files */}
             {uploadedFiles.map((fileObject) => (
               <div key={fileObject.id} className={styles.fileCard}>
                 <FileText size={20} />

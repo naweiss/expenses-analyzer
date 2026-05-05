@@ -37,6 +37,7 @@ export const translations = {
     applyToAllHint: 'This will update all transactions with the description: ',
     customCategory: 'Custom...',
     newCategory: 'New Category Name',
+    exportCSV: 'Export to CSV',
   },
   he: {
     title: 'מנתח הוצאות',
@@ -76,6 +77,7 @@ export const translations = {
     applyToAllHint: 'זה יעדכן את כל העסקאות עם התיאור: ',
     customCategory: 'מותאם אישית...',
     newCategory: 'שם קטגוריה חדשה',
+    exportCSV: 'ייצוא ל-CSV',
   },
 };
 

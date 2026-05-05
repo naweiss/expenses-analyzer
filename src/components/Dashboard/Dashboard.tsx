@@ -1,10 +1,12 @@
 import React, { useMemo, useCallback } from 'react';
 import { format, parse, isValid } from 'date-fns';
+import { Download } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useDashboardUI } from '../../context/UIContext';
 import { useDashboardData } from '../../context/useDashboardData';
 import { getDateLocale } from '../../utils/dateUtils';
 import { TREND_DATE_FORMATS } from '../../utils/constants';
+import { exportTransactionsToCSV } from '../../utils/csvExporter';
 import TimeframeSelector from './TimeframeSelector';
 import ExpenseSummary from './ExpenseSummary';
 import IndustryBreakdown from './IndustryBreakdown';
@@ -91,6 +93,10 @@ const Dashboard: React.FC = () => {
     dateLocale,
   ]);
 
+  const handleExportCSV = () => {
+    exportTransactionsToCSV(activeFilteredTransactions);
+  };
+
   const translateIndustry = (industry: string) => {
     if (industry === 'unknown') return translation.unknown;
     if (industry === 'other') return translation.other;
@@ -133,6 +139,10 @@ const Dashboard: React.FC = () => {
         <div className={styles.detailsHeader}>
           <div className={styles.headerTitleGroup}>
             <h3>{translation.transactionDetails}</h3>
+            <button className={styles.exportBtn} onClick={handleExportCSV}>
+              <Download size={16} />
+              {translation.exportCSV}
+            </button>
           </div>
           <div className={styles.activeFilters}>
             {(selectedIndustries.length > 0 || selectedTrendPeriod) && (

@@ -1,7 +1,7 @@
 import { parse, isValid } from 'date-fns';
 
 /**
- * Utility functions for parsing transaction data.
+ * Utility functions shared between CSV and PDF parsers.
  */
 
 /**
