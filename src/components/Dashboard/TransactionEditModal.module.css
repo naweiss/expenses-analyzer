@@ -1,0 +1,131 @@
+.editOverlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.editCard {
+  background: var(--color-card);
+  padding: var(--spacing-6);
+  border-radius: var(--border-radius-2xl);
+  box-shadow: var(--shadow-xl);
+  width: 90%;
+  max-width: 25rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.editCard h4 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-main);
+}
+
+.editInput {
+  width: 100%;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-sm);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.editInput:focus {
+  border-color: var(--color-primary);
+}
+
+.categoryList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  max-height: 12rem;
+  overflow-y: auto;
+  padding: var(--spacing-1);
+}
+
+.categoryOption {
+  padding: var(--border-radius-md) var(--spacing-3);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: var(--transition-base);
+}
+
+.categoryOption:hover {
+  filter: brightness(0.9);
+}
+
+.categoryOption.selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-soft);
+}
+
+.checkboxContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  cursor: pointer;
+  padding: var(--spacing-2);
+  background: var(--color-bg);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-main);
+}
+
+.checkboxContainer input {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.applyHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-block-start: calc(var(--spacing-2) * -1);
+  padding-inline-start: var(--spacing-8);
+}
+
+.editActions {
+  display: flex;
+  gap: var(--spacing-3);
+  margin-block-start: var(--spacing-2);
+}
+
+.btn {
+  flex: 1;
+  padding: 0.625rem;
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-base);
+  border: none;
+}
+
+.saveBtn {
+  background: var(--color-primary);
+  color: white;
+}
+
+.saveBtn:hover {
+  filter: brightness(0.9);
+}
+
+.cancelBtn {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+.cancelBtn:hover {
+  background: var(--color-border);
+  color: var(--color-text-main);
+}

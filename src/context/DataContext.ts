@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { CSVFile, Transaction } from '../utils/csvParser';
+import { CSVFile, Transaction } from '../types/domain';
 
 export interface ExpenseDataContextType {
   files: CSVFile[];

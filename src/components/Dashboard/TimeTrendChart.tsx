@@ -10,7 +10,6 @@ import {
   Cell,
   LineChart,
   Line,
-  MouseHandlerDataParam,
   TooltipValueType,
   DotItemDotProps,
 } from 'recharts';
@@ -20,6 +19,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useExpenseData } from '../../context/DataContext';
 import { useDashboardUI } from '../../context/UIContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useTranslate } from '../../hooks/useTranslate';
 import {
   CHART_CONFIG,
   DIMMED_OPACITY,
@@ -27,7 +27,7 @@ import {
   PRIMARY_COLOR,
   UI_COLORS,
 } from '../../utils/constants';
-import { TimeTrendPoint } from '../../utils/dataAggregator';
+import { TimeTrendPoint } from '../../types/domain';
 import styles from './Dashboard.module.css';
 
 interface TimeTrendChartProps {
@@ -38,12 +38,13 @@ interface TimeTrendChartProps {
 
 type ChartType = 'bar' | 'stackedBar' | 'line';
 
-interface ChartClickState extends MouseHandlerDataParam {
-  activePayload?: { payload: TimeTrendPoint }[];
-}
-
 interface CustomDotProps extends DotItemDotProps {
   payload: TimeTrendPoint;
+}
+
+interface RechartsClickState {
+  activeLabel?: string | number;
+  activePayload?: { payload: TimeTrendPoint }[];
 }
 
 const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
@@ -51,17 +52,12 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
   onBarClick,
   selectedPeriod,
 }) => {
-  const { isRightToLeft, currentLanguage, translation } = useLanguage();
+  const { isRightToLeft, currentLanguage } = useLanguage();
+  const { translateIndustry, translation } = useTranslate();
   const { industryColorMap } = useExpenseData();
   const { selectedIndustries } = useDashboardUI();
   const isMobile = useIsMobile();
   const [chartType, setChartType] = useState<ChartType>('bar');
-
-  const translateIndustry = (industry: string) => {
-    if (industry === 'unknown') return translation.unknown;
-    if (industry === 'other') return translation.other;
-    return industry;
-  };
 
   const industries = useMemo(() => {
     return Object.keys(industryColorMap).filter((industry) =>
@@ -74,13 +70,14 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
       ? (industryColorMap[selectedIndustries[0]] ?? PRIMARY_COLOR)
       : PRIMARY_COLOR;
 
-  const handleChartClick = (state: ChartClickState) => {
-    const label = state.activeLabel ?? state.activePayload?.[0]?.payload?.dateLabel;
-    if (label) {
+  const handleChartClick = (state: RechartsClickState) => {
+    const label = state?.activeLabel ?? state?.activePayload?.[0]?.payload?.dateLabel;
+    if (label !== undefined && label !== null) {
+      const labelStr = String(label);
       // Only allow selection if the clicked point has expenses
-      const point = trendData.find((d) => d.dateLabel === String(label));
+      const point = trendData.find((d) => d.dateLabel === labelStr);
       if (point && point.totalAmount > 0) {
-        onBarClick(selectedPeriod === String(label) ? null : String(label));
+        onBarClick(selectedPeriod === labelStr ? null : labelStr);
       }
     }
   };
@@ -164,6 +161,15 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
               name={translation.totalExpenses}
               radius={[4, 4, 0, 0]}
               cursor="pointer"
+              onClick={(data: { dateLabel?: string; payload?: { dateLabel?: string } }) => {
+                const label = data?.dateLabel ?? data?.payload?.dateLabel;
+                if (label) {
+                  const point = trendData.find((pt) => pt.dateLabel === label);
+                  if (point && point.totalAmount > 0) {
+                    onBarClick(selectedPeriod === label ? null : label);
+                  }
+                }
+              }}
             >
               {trendData.map((point, index) => (
                 <Cell
@@ -192,6 +198,15 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
                 fill={industryColorMap[industry]}
                 radius={[0, 0, 0, 0]}
                 cursor="pointer"
+                onClick={(data: { dateLabel?: string; payload?: { dateLabel?: string } }) => {
+                  const label = data?.dateLabel ?? data?.payload?.dateLabel;
+                  if (label) {
+                    const point = trendData.find((pt) => pt.dateLabel === label);
+                    if (point && point.totalAmount > 0) {
+                      onBarClick(selectedPeriod === label ? null : label);
+                    }
+                  }
+                }}
               >
                 {trendData.map((point, index) => {
                   const isDateSelected = !selectedPeriod || selectedPeriod === point.dateLabel;

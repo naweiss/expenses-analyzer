@@ -1,22 +1,28 @@
 import Papa, { ParseResult } from 'papaparse';
+import { Transaction } from '../types/domain';
 import { parseDateString, sanitizeAmount, normalizeText } from './parserUtils';
+import { getRowValue } from './parserSchema';
 
-export interface Transaction {
-  id: string;
-  date: Date;
-  businessName: string;
-  industry: string;
-  transactionAmount: number;
-  debitAmount: number;
-  details: string;
-  userNotes?: string;
-}
+const mapRowToTransaction = (row: Record<string, string>): Transaction => {
+  const dateVal = getRowValue(row, 'DATE');
+  const nameVal = getRowValue(row, 'BUSINESS_NAME');
+  const industryVal = getRowValue(row, 'INDUSTRY');
+  const amountVal = getRowValue(row, 'ORIGINAL_AMOUNT');
+  const debitVal = getRowValue(row, 'CHARGE_AMOUNT');
+  const detailsVal = getRowValue(row, 'DETAILS');
+  const notesVal = getRowValue(row, 'NOTES');
 
-export interface CSVFile {
-  id: string;
-  name: string;
-  transactions: Transaction[];
-}
+  return {
+    id: crypto.randomUUID(),
+    date: parseDateString(dateVal),
+    businessName: normalizeText(nameVal) || 'unknown',
+    industry: normalizeText(industryVal) || 'other',
+    transactionAmount: sanitizeAmount(amountVal),
+    debitAmount: sanitizeAmount(debitVal),
+    details: normalizeText(detailsVal) || '',
+    userNotes: normalizeText(notesVal) || undefined,
+  };
+};
 
 export const parseCSV = (file: File): Promise<Transaction[]> => {
   return new Promise((resolve, reject) => {
@@ -27,34 +33,13 @@ export const parseCSV = (file: File): Promise<Transaction[]> => {
       complete: (results: ParseResult<Record<string, string>>) => {
         try {
           const validTransactions = results.data
-            .map((row) => {
-              const columns = Object.values(row);
-
-              // Try to find values by common header names or fall back to column index
-              const dateVal = row.Date || row['תאריך'] || columns[0];
-              const nameVal = row['Business Name'] || row['שם בית העסק'] || columns[1];
-              const industryVal = row.Category || row.Industry || row['ענף'] || columns[2];
-              const amountVal = row['Transaction Amount'] || row['סכום עסקה'] || columns[3];
-              const debitVal = row['Debit Amount'] || row['סכום חיוב'] || columns[4];
-              const detailsVal = row.Details || row['פירוט'] || columns[5];
-              const notesVal = row.Notes || row['הערות'] || '';
-
-              return {
-                id: crypto.randomUUID(),
-                date: parseDateString(dateVal),
-                businessName: normalizeText(nameVal) || 'unknown',
-                industry: normalizeText(industryVal) || 'other',
-                transactionAmount: sanitizeAmount(amountVal),
-                debitAmount: sanitizeAmount(debitVal),
-                details: normalizeText(detailsVal) || '',
-                userNotes: normalizeText(notesVal) || undefined,
-              };
-            })
-            .filter((transaction) => !isNaN(transaction.date.getTime()));
+            .map(mapRowToTransaction)
+            .filter((t) => !isNaN(t.date.getTime()));
 
           resolve(validTransactions);
         } catch (error) {
-          reject(error instanceof Error ? error : new Error('Failed to process CSV data'));
+          const message = error instanceof Error ? error.message : 'Failed to process CSV data';
+          reject(new Error(message));
         }
       },
       error: (error: Error) => reject(error),

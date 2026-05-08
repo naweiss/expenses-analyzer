@@ -3,13 +3,14 @@ import { ArrowUpRight, Activity, HandCoins } from 'lucide-react';
 import { differenceInDays, differenceInWeeks, differenceInMonths } from 'date-fns';
 import { useLanguage } from '../../context/LanguageContext';
 import { useDashboardUI } from '../../context/UIContext';
+import { useTranslate } from '../../hooks/useTranslate';
 import {
   FORMAT_CURRENCY,
   PRIMARY_COLOR,
   SUCCESS_COLOR,
   WARNING_COLOR,
 } from '../../utils/constants';
-import { Transaction } from '../../utils/csvParser';
+import { Transaction } from '../../types/domain';
 import StatusCard from '../UI/StatusCard/StatusCard';
 import styles from './Dashboard.module.css';
 
@@ -20,7 +21,8 @@ interface ExpenseSummaryProps {
 }
 
 const ExpenseSummary: React.FC<ExpenseSummaryProps> = ({ transactions, startDate, endDate }) => {
-  const { translation, currentLanguage } = useLanguage();
+  const { currentLanguage } = useLanguage();
+  const { translation } = useTranslate();
   const { timeframeViewType } = useDashboardUI();
 
   const totalExpensesAmount = transactions.reduce(

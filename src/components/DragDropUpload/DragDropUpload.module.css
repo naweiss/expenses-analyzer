@@ -72,6 +72,29 @@
   background: var(--color-primary-soft);
 }
 
+.fileCard.error {
+  border-color: #fecaca;
+  background-color: #fef2f2;
+}
+
+.fileCard.error svg {
+  color: #ef4444;
+}
+
+.fileNameRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.errorMessage {
+  font-size: 0.7rem;
+  color: #ef4444;
+  margin-top: 0.25rem;
+  display: block;
+}
+
 .fileInfo {
   flex: 1;
   display: flex;

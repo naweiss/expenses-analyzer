@@ -6,8 +6,10 @@ import { ExpenseDataProvider } from './context/DataProvider';
 import { useExpenseData } from './context/DataContext';
 import { DashboardUIProvider } from './context/UIProvider';
 import { useDashboardUI } from './context/UIContext';
+import { useTranslate } from './hooks/useTranslate';
 import DragDropUpload from './components/DragDropUpload/DragDropUpload';
 import FileNavigator from './components/FileNavigator/FileNavigator';
+import ErrorBoundary from './components/UI/ErrorBoundary/ErrorBoundary';
 import styles from './App.module.css';
 
 const Dashboard = lazy(() => import('./components/Dashboard/Dashboard'));
@@ -15,7 +17,8 @@ const Dashboard = lazy(() => import('./components/Dashboard/Dashboard'));
 const AppContent: React.FC = () => {
   const { files } = useExpenseData();
   const { resetView } = useDashboardUI();
-  const { currentLanguage, setLanguage, translation } = useLanguage();
+  const { currentLanguage, setLanguage } = useLanguage();
+  const { translation } = useTranslate();
 
   return (
     <div className={styles.appContainer}>
@@ -65,13 +68,15 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <LanguageProvider>
-      <ExpenseDataProvider>
-        <DashboardUIProvider>
-          <AppContent />
-        </DashboardUIProvider>
-      </ExpenseDataProvider>
-    </LanguageProvider>
+    <ErrorBoundary>
+      <LanguageProvider>
+        <ExpenseDataProvider>
+          <DashboardUIProvider>
+            <AppContent />
+          </DashboardUIProvider>
+        </ExpenseDataProvider>
+      </LanguageProvider>
+    </ErrorBoundary>
   );
 };
 

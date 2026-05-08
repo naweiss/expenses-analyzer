@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import { Transaction } from './csvParser';
+import { Transaction } from '../types/domain';
 import { format } from 'date-fns';
 
 export const exportTransactionsToCSV = (transactions: Transaction[]) => {

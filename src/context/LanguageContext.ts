@@ -1,11 +1,10 @@
 import { createContext, useContext } from 'react';
-import { translations } from '../utils/translations';
-import { Language } from '../utils/translations';
+import { Language, TranslationSchema } from '../types/domain';
 
 export interface LanguageContextType {
   currentLanguage: Language;
   setLanguage: (lang: Language) => void;
-  translation: typeof translations.en;
+  translation: TranslationSchema;
   isRightToLeft: boolean;
 }
 

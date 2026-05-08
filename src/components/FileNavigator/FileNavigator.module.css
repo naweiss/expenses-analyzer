@@ -107,6 +107,15 @@
   background: var(--color-primary-soft);
 }
 
+.navBoxWrapper.error {
+  border-color: var(--color-danger);
+  background-color: var(--color-danger-soft);
+}
+
+.navBoxWrapper.error .navBox {
+  color: var(--color-danger);
+}
+
 .spinner {
   animation: spin 1s linear infinite;
   color: var(--color-primary);
@@ -128,6 +137,15 @@
   height: 100%;
   background: var(--color-primary);
   transition: width 0.3s ease;
+}
+
+.errorText {
+  font-size: 0.6rem;
+  color: var(--color-danger);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 8rem;
 }
 
 @keyframes spin {
@@ -181,6 +199,10 @@
 .removeBtn:hover {
   background: var(--color-danger-soft);
   color: var(--color-danger);
+}
+
+.navBoxWrapper:hover .removeBtn {
+  opacity: 1;
 }
 
 .dragOverlay {

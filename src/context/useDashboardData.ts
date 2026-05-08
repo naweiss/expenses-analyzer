@@ -1,4 +1,6 @@
 import { useMemo } from 'react';
+import { format } from 'date-fns';
+import { he, enUS } from 'date-fns/locale';
 import { useExpenseData } from './DataContext';
 import { useDashboardUI } from './UIContext';
 import { useLanguage } from './LanguageContext';
@@ -11,9 +13,15 @@ import {
 
 export const useDashboardData = () => {
   const { allTransactions, files } = useExpenseData();
-  const { currentFileIndex, timeframeViewType, referenceDate, selectedIndustries } =
-    useDashboardUI();
+  const {
+    currentFileIndex,
+    timeframeViewType,
+    referenceDate,
+    selectedIndustries,
+    selectedTrendPeriod,
+  } = useDashboardUI();
   const { currentLanguage } = useLanguage();
+  const dateLocale = currentLanguage === 'he' ? he : enUS;
 
   const currentTransactions = useMemo(() => {
     if (currentFileIndex === 0) return allTransactions;
@@ -25,32 +33,44 @@ export const useDashboardData = () => {
     [timeframeViewType, referenceDate],
   );
 
-  const filteredTransactions = useMemo(
+  const timeframeFilteredTransactions = useMemo(
     () => filterByTimeframe(currentTransactions, timeframeStartDate, timeframeEndDate),
     [currentTransactions, timeframeStartDate, timeframeEndDate],
   );
 
   const industryBreakdownData = useMemo(
-    () => aggregateByIndustry(filteredTransactions),
-    [filteredTransactions],
+    () => aggregateByIndustry(timeframeFilteredTransactions),
+    [timeframeFilteredTransactions],
   );
 
-  const transactionsForTrendVisualization = useMemo(() => {
-    if (selectedIndustries.length === 0) return filteredTransactions;
-    return filteredTransactions.filter((t) => selectedIndustries.includes(t.industry));
-  }, [filteredTransactions, selectedIndustries]);
+  // Unified filtering for both Summary Cards and Detailed Table
+  const filteredTransactions = useMemo(() => {
+    let filtered = timeframeFilteredTransactions;
+    if (selectedIndustries.length > 0) {
+      filtered = filtered.filter((t) => selectedIndustries.includes(t.industry));
+    }
+    if (selectedTrendPeriod) {
+      filtered = filtered.filter(
+        (t) => format(t.date, 'dd MMM', { locale: dateLocale }) === selectedTrendPeriod,
+      );
+    }
+    return filtered;
+  }, [timeframeFilteredTransactions, selectedIndustries, selectedTrendPeriod, dateLocale]);
 
   const timeTrendData = useMemo(
     () =>
       getTrendData(
-        transactionsForTrendVisualization,
+        selectedIndustries.length === 0
+          ? timeframeFilteredTransactions
+          : timeframeFilteredTransactions.filter((t) => selectedIndustries.includes(t.industry)),
         timeframeStartDate,
         timeframeEndDate,
         timeframeViewType,
         currentLanguage,
       ),
     [
-      transactionsForTrendVisualization,
+      timeframeFilteredTransactions,
+      selectedIndustries,
       timeframeStartDate,
       timeframeEndDate,
       timeframeViewType,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { translations } from '../utils/translations';
 import { LanguageContext } from './LanguageContext';
-import { Language } from '../utils/translations';
+import { Language } from '../types/domain';
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentLanguage, setCurrentLanguage] = useState<Language>('he');

@@ -222,6 +222,7 @@
 
 .activeFilters {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--spacing-2);
   flex-wrap: wrap;
   align-items: center;

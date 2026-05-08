@@ -15,8 +15,9 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useExpenseData } from '../../context/DataContext';
 import { useDashboardUI } from '../../context/UIContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useTranslate } from '../../hooks/useTranslate';
 import { CHART_CONFIG, DIMMED_OPACITY, FORMAT_CURRENCY, UI_COLORS } from '../../utils/constants';
-import { IndustryTotal } from '../../utils/dataAggregator';
+import { IndustryTotal } from '../../types/domain';
 import styles from './Dashboard.module.css';
 
 interface IndustryBreakdownProps {
@@ -24,7 +25,8 @@ interface IndustryBreakdownProps {
 }
 
 const IndustryBreakdown: React.FC<IndustryBreakdownProps> = ({ data: industryData }) => {
-  const { isRightToLeft, currentLanguage, translation } = useLanguage();
+  const { isRightToLeft, currentLanguage } = useLanguage();
+  const { translateIndustry } = useTranslate();
   const { industryColorMap } = useExpenseData();
   const { toggleIndustry, selectedIndustries } = useDashboardUI();
   const isMobile = useIsMobile();
@@ -32,13 +34,6 @@ const IndustryBreakdown: React.FC<IndustryBreakdownProps> = ({ data: industryDat
   const activeIndustryData = useMemo(() => {
     return (industryData || []).filter((item) => item && item.totalAmount > 0);
   }, [industryData]);
-
-  const translateIndustry = (industry: string) => {
-    if (!industry) return '';
-    if (industry === 'unknown') return translation.unknown;
-    if (industry === 'other') return translation.other;
-    return industry;
-  };
 
   const legendPadding = {
     paddingTop: isMobile ? '10px' : '20px',

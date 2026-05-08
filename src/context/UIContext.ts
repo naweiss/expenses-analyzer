@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { TimeframeType } from '../utils/dataAggregator';
+import { TimeframeType } from '../types/domain';
 
 export interface DashboardUIContextType {
   currentFileIndex: number;

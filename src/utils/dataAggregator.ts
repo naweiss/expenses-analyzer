@@ -12,23 +12,15 @@ import {
   endOfDay,
   Locale,
 } from 'date-fns';
-import { Transaction } from './csvParser';
-import { Language } from './translations';
+import {
+  Transaction,
+  IndustryTotal,
+  TimeTrendPoint,
+  TimeframeType,
+  Language,
+} from '../types/domain';
 import { getDateLocale } from './dateUtils';
 import { TREND_DATE_FORMATS } from './constants';
-
-export interface IndustryTotal {
-  industry: string;
-  totalAmount: number;
-}
-
-export interface TimeTrendPoint {
-  dateLabel: string;
-  totalAmount: number;
-  [category: string]: number | string;
-}
-
-export type TimeframeType = 'week' | 'month' | 'year';
 
 export const aggregateByIndustry = (transactions: Transaction[]): IndustryTotal[] => {
   const industryMap = new Map<string, number>();
@@ -75,6 +67,48 @@ const getIntervals = (
   return eachDayOfInterval({ start: startDate, end: endDate });
 };
 
+interface IntervalBound {
+  intervalStart: number;
+  intervalEnd: number;
+  dateLabel: string;
+}
+
+const calculateIntervalBounds = (
+  startDate: Date,
+  endDate: Date,
+  timeframeType: TimeframeType,
+  locale: Locale,
+): IntervalBound[] => {
+  const intervals = getIntervals(startDate, endDate, timeframeType, locale);
+  const labelFormatString = TREND_DATE_FORMATS[timeframeType];
+  const startLimit = startDate.getTime();
+  const endLimit = endDate.getTime();
+
+  return intervals.map((currentInterval) => {
+    let intervalStart: number;
+    let intervalEnd: number;
+    let dateLabel: string;
+
+    if (timeframeType === 'year') {
+      intervalStart = startOfMonth(currentInterval).getTime();
+      intervalEnd = endOfMonth(currentInterval).getTime();
+      dateLabel = format(currentInterval, labelFormatString, { locale });
+    } else if (timeframeType === 'month') {
+      const weekStart = startOfWeek(currentInterval, { locale }).getTime();
+      const weekEnd = endOfWeek(currentInterval, { locale }).getTime();
+      intervalStart = Math.max(weekStart, startLimit);
+      intervalEnd = Math.min(weekEnd, endLimit);
+      dateLabel = format(new Date(intervalStart), labelFormatString, { locale });
+    } else {
+      intervalStart = currentInterval.getTime();
+      intervalEnd = endOfDay(currentInterval).getTime();
+      dateLabel = format(currentInterval, labelFormatString, { locale });
+    }
+
+    return { intervalStart, intervalEnd, dateLabel };
+  });
+};
+
 export const getTrendData = (
   transactions: Transaction[],
   startDate: Date,
@@ -84,55 +118,38 @@ export const getTrendData = (
 ): TimeTrendPoint[] => {
   const dateLocale = getDateLocale(language);
   const allIndustries = Array.from(new Set(transactions.map((t) => t.industry)));
-  const intervals = getIntervals(startDate, endDate, timeframeType, dateLocale);
-  const labelFormatString = TREND_DATE_FORMATS[timeframeType];
+  const intervalBounds = calculateIntervalBounds(startDate, endDate, timeframeType, dateLocale);
 
-  const startLimit = startDate.getTime();
-  const endLimit = endDate.getTime();
+  const sortedTransactions = [...transactions].sort((a, b) => a.date.getTime() - b.date.getTime());
+  let transactionIdx = 0;
 
-  // Pre-calculate interval boundaries and labels
-  const intervalBounds = intervals.map((currentInterval) => {
-    let intervalStart: number;
-    let intervalEnd: number;
-    let dateLabel: string;
-
-    if (timeframeType === 'year') {
-      intervalStart = startOfMonth(currentInterval).getTime();
-      intervalEnd = endOfMonth(currentInterval).getTime();
-      dateLabel = format(currentInterval, labelFormatString, { locale: dateLocale });
-    } else if (timeframeType === 'month') {
-      const weekStart = startOfWeek(currentInterval, { locale: dateLocale }).getTime();
-      const weekEnd = endOfWeek(currentInterval, { locale: dateLocale }).getTime();
-      intervalStart = Math.max(weekStart, startLimit);
-      intervalEnd = Math.min(weekEnd, endLimit);
-      dateLabel = format(new Date(intervalStart), labelFormatString, { locale: dateLocale });
-    } else {
-      intervalStart = currentInterval.getTime();
-      // For day view, we want the whole day
-      intervalEnd = endOfDay(currentInterval).getTime();
-      dateLabel = format(currentInterval, labelFormatString, { locale: dateLocale });
-    }
-
-    return { intervalStart, intervalEnd, dateLabel };
-  });
-
-  // Efficiently group transactions into intervals
   return intervalBounds.map(({ intervalStart, intervalEnd, dateLabel }) => {
-    const intervalTransactions = transactions.filter((t) => {
-      const time = t.date.getTime();
-      return time >= intervalStart && time <= intervalEnd;
-    });
-
-    const totalAmount = intervalTransactions.reduce((sum, t) => sum + t.debitAmount, 0);
+    let totalAmount = 0;
     const categoryBreakdown: Record<string, number> = {};
 
     allIndustries.forEach((industry) => {
       categoryBreakdown[industry] = 0;
     });
 
-    intervalTransactions.forEach((t) => {
+    while (
+      transactionIdx < sortedTransactions.length &&
+      sortedTransactions[transactionIdx].date.getTime() < intervalStart
+    ) {
+      transactionIdx++;
+    }
+
+    let tempIdx = transactionIdx;
+    while (
+      tempIdx < sortedTransactions.length &&
+      sortedTransactions[tempIdx].date.getTime() <= intervalEnd
+    ) {
+      const t = sortedTransactions[tempIdx];
+      totalAmount += t.debitAmount;
       categoryBreakdown[t.industry] += t.debitAmount;
-    });
+      tempIdx++;
+    }
+
+    transactionIdx = tempIdx;
 
     return {
       dateLabel,

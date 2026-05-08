@@ -1,4 +1,6 @@
-export const translations = {
+import { Language, TranslationSchema } from '../types/domain';
+
+export const translations: Record<Language, TranslationSchema> = {
   en: {
     title: 'ExpenseAnalyzer',
     welcome: 'Welcome to your Financial Overview',
@@ -53,7 +55,7 @@ export const translations = {
     month: 'חודש',
     year: 'שנה',
     industryBreakdown: 'פילוח לפי ענפים',
-    spendingTrend: 'גרף' + ' הוצאות',
+    spendingTrend: 'גרף הוצאות',
     totalExpenses: 'סה"כ הוצאות',
     avgPeriodic: {
       week: 'הוצאה יומית ממוצעת',
@@ -80,5 +82,3 @@ export const translations = {
     exportCSV: 'ייצוא ל-CSV',
   },
 };
-
-export type Language = 'en' | 'he';

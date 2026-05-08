@@ -1,20 +1,28 @@
-import React, { useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { FileText, Plus, X, Layers, Loader2, Download } from 'lucide-react';
+import { FileText, Plus, X, Layers, Download, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useExpenseData } from '../../context/DataContext';
 import { useDashboardUI } from '../../context/UIContext';
-import { useFileParsing } from '../../hooks/useFileParsing';
+import { useFileParser } from '../../hooks/useFileParser';
 import { exportTransactionsToCSV } from '../../utils/csvExporter';
 import styles from './FileNavigator.module.css';
 
 const FileNavigator: React.FC = () => {
   const { translation } = useLanguage();
-  const { files, removeFile, allTransactions } = useExpenseData();
+  const { files, addFiles, removeFile, allTransactions } = useExpenseData();
   const { currentFileIndex, setCurrentFileIndex } = useDashboardUI();
-  const { handleFilesDrop, processingFiles } = useFileParsing();
+
+  const { parseFiles, processingFiles, removeProcessingFile } = useFileParser(addFiles);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFilesDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      void parseFiles(acceptedFiles);
+    },
+    [parseFiles],
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFilesDrop,
@@ -68,14 +76,30 @@ const FileNavigator: React.FC = () => {
           ))}
 
           {processingFiles.map((file) => (
-            <div key={file.id} className={`${styles.navBoxWrapper} ${styles.processing}`}>
+            <div
+              key={file.id}
+              className={`${styles.navBoxWrapper} ${file.error ? styles.error : styles.processing}`}
+            >
               <div className={styles.navBox}>
-                <Loader2 size={18} className={styles.spinner} />
+                {file.error ? <AlertCircle size={18} /> : <FileText size={18} />}
                 <span className={styles.fileName}>{file.name}</span>
-                <div className={styles.progressContainer}>
-                  <div className={styles.progressBar} style={{ width: `${file.progress}%` }} />
-                </div>
+                {!file.error && (
+                  <div className={styles.progressContainer}>
+                    <div className={styles.progressBar} style={{ width: `${file.progress}%` }} />
+                  </div>
+                )}
+                {file.error && <span className={styles.errorText}>{file.error}</span>}
               </div>
+              <button
+                className={styles.removeBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeProcessingFile(file.id);
+                }}
+                aria-label="Remove"
+              >
+                <X size={14} />
+              </button>
             </div>
           ))}
         </div>
@@ -83,6 +107,7 @@ const FileNavigator: React.FC = () => {
         <button
           className={`${styles.navBox} ${styles.addBox} ${styles.staticBtn}`}
           onClick={openFileDialog}
+          aria-label="Add file"
         >
           <Plus size={20} />
         </button>

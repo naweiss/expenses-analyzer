@@ -1,9 +1,10 @@
-import React, { useMemo, useCallback } from 'react';
-import { format, parse, isValid } from 'date-fns';
+import React, { useCallback } from 'react';
+import { parse, isValid } from 'date-fns';
 import { Download } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useDashboardUI } from '../../context/UIContext';
 import { useDashboardData } from '../../context/useDashboardData';
+import { useTranslate } from '../../hooks/useTranslate';
 import { getDateLocale } from '../../utils/dateUtils';
 import { TREND_DATE_FORMATS } from '../../utils/constants';
 import { exportTransactionsToCSV } from '../../utils/csvExporter';
@@ -15,7 +16,8 @@ import TransactionTable from './TransactionTable';
 import styles from './Dashboard.module.css';
 
 const Dashboard: React.FC = () => {
-  const { translation, currentLanguage } = useLanguage();
+  const { currentLanguage } = useLanguage();
+  const { translateIndustry, translation } = useTranslate();
   const {
     selectedIndustries,
     setSelectedIndustries,
@@ -71,42 +73,14 @@ const Dashboard: React.FC = () => {
     ],
   );
 
-  // Unified filtering for both Summary Cards and Detailed Table
-  const activeFilteredTransactions = useMemo(() => {
-    let filtered = filteredTransactions;
-    if (selectedIndustries.length > 0) {
-      filtered = filtered.filter((t) => selectedIndustries.includes(t.industry));
-    }
-    if (selectedTrendPeriod) {
-      filtered = filtered.filter(
-        (t) =>
-          format(t.date, TREND_DATE_FORMATS[timeframeViewType], { locale: dateLocale }) ===
-          selectedTrendPeriod,
-      );
-    }
-    return filtered;
-  }, [
-    filteredTransactions,
-    selectedIndustries,
-    selectedTrendPeriod,
-    timeframeViewType,
-    dateLocale,
-  ]);
-
   const handleExportCSV = () => {
-    exportTransactionsToCSV(activeFilteredTransactions);
-  };
-
-  const translateIndustry = (industry: string) => {
-    if (industry === 'unknown') return translation.unknown;
-    if (industry === 'other') return translation.other;
-    return industry;
+    exportTransactionsToCSV(filteredTransactions);
   };
 
   return (
     <div className={styles.dashboard}>
       <ExpenseSummary
-        transactions={activeFilteredTransactions}
+        transactions={filteredTransactions}
         startDate={timeframeStartDate}
         endDate={timeframeEndDate}
       />
@@ -166,7 +140,7 @@ const Dashboard: React.FC = () => {
             )}
           </div>
         </div>
-        <TransactionTable transactions={activeFilteredTransactions} />
+        <TransactionTable transactions={filteredTransactions} />
       </div>
     </div>
   );

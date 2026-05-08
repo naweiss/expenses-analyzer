@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { addWeeks, addMonths, addYears, startOfToday } from 'date-fns';
-import { TimeframeType } from '../utils/dataAggregator';
+import { TimeframeType } from '../types/domain';
 import { useExpenseData } from './DataContext';
 import { DashboardUIContext } from './UIContext';
 
@@ -24,6 +24,7 @@ export const DashboardUIProvider: React.FC<{ children: React.ReactNode }> = ({ c
         if (timeframeViewType === 'month') return addMonths(current, direction);
         return addYears(current, direction);
       });
+      setSelectedTrendPeriod(null);
     },
     [timeframeViewType, latestTransactionDate],
   );

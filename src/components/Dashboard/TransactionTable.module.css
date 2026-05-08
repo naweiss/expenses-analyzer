@@ -71,7 +71,7 @@
 }
 
 .justifyEnd {
-  justify-content: flex-start; /* Keeping it start as per the existing comment in amountCol */
+  justify-content: flex-start;
 }
 
 .sortIcon {
@@ -387,7 +387,6 @@
   color: var(--color-primary);
 }
 
-/* Mobile Responsiveness */
 @media (max-width: 768px) {
   .table {
     font-size: var(--font-size-xs);

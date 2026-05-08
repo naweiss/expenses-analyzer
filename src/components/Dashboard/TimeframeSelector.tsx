@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useDashboardUI } from '../../context/UIContext';
+import { useTranslate } from '../../hooks/useTranslate';
 import { getDateLocale } from '../../utils/dateUtils';
 import styles from './Dashboard.module.css';
 
@@ -12,7 +13,8 @@ interface TimeframeSelectorProps {
 }
 
 const TimeframeSelector: React.FC<TimeframeSelectorProps> = ({ start, end }) => {
-  const { translation, isRightToLeft, currentLanguage } = useLanguage();
+  const { currentLanguage, isRightToLeft } = useLanguage();
+  const { translation } = useTranslate();
   const { timeframeViewType, setTimeframeViewType, navigateTimeframe } = useDashboardUI();
 
   const dateLocale = getDateLocale(currentLanguage);

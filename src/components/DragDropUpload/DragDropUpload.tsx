@@ -1,15 +1,23 @@
-import React from 'react';
-import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, X, Loader2 } from 'lucide-react';
+import React, { useCallback } from 'react';
+import { useDropzone, FileRejection, DropEvent } from 'react-dropzone';
+import { Upload, FileText, X, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useExpenseData } from '../../context/DataContext';
-import { useFileParsing } from '../../hooks/useFileParsing';
+import { useFileParser } from '../../hooks/useFileParser';
 import styles from './DragDropUpload.module.css';
 
 const DragDropUpload: React.FC = () => {
   const { translation } = useLanguage();
-  const { files: uploadedFiles, removeFile } = useExpenseData();
-  const { handleFilesDrop, processingFiles } = useFileParsing();
+  const { addFiles, files: uploadedFiles, removeFile } = useExpenseData();
+
+  const { parseFiles, processingFiles, removeProcessingFile } = useFileParser(addFiles);
+
+  const handleFilesDrop = useCallback(
+    (acceptedFiles: File[], _fileRejections: FileRejection[], _event: DropEvent) => {
+      void parseFiles(acceptedFiles);
+    },
+    [parseFiles],
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFilesDrop,
@@ -37,15 +45,33 @@ const DragDropUpload: React.FC = () => {
             {translation.uploadedFiles} ({uploadedFiles.length + processingFiles.length})
           </h3>
           <div className={styles.filesGrid}>
-            {/* Processing Files */}
+            {/* Processing / Error Files */}
             {processingFiles.map((file) => (
-              <div key={file.id} className={`${styles.fileCard} ${styles.processing}`}>
-                <Loader2 size={20} className={styles.spinner} />
+              <div
+                key={file.id}
+                className={`${styles.fileCard} ${file.error ? styles.error : styles.processing}`}
+              >
+                {file.error ? <AlertCircle size={20} /> : <FileText size={20} />}
                 <div className={styles.fileInfo}>
-                  <span title={file.name}>{file.name}</span>
-                  <div className={styles.progressContainer}>
-                    <div className={styles.progressBar} style={{ width: `${file.progress}%` }} />
+                  <div className={styles.fileNameRow}>
+                    <span title={file.name}>{file.name}</span>
+                    {file.error && (
+                      <button
+                        onClick={() => removeProcessingFile(file.id)}
+                        className={styles.removeBtn}
+                        aria-label="Remove failed file"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
                   </div>
+                  {file.error ? (
+                    <span className={styles.errorMessage}>{file.error}</span>
+                  ) : (
+                    <div className={styles.progressContainer}>
+                      <div className={styles.progressBar} style={{ width: `${file.progress}%` }} />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

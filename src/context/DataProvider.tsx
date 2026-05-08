@@ -1,24 +1,25 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { CSVFile, Transaction } from '../utils/csvParser';
+import { CSVFile, Transaction } from '../types/domain';
 import { CHART_COLORS } from '../utils/constants';
 import { ExpenseDataContext } from './DataContext';
 
 export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [files, setFiles] = useState<CSVFile[]>([]);
 
-  const allTransactions = useMemo(() => {
-    return files.flatMap((file) => file.transactions);
-  }, [files]);
+  const allTransactions = useMemo(() => files.flatMap((file) => file.transactions), [files]);
 
   const latestTransactionDate = useMemo(() => {
     if (allTransactions.length === 0) return null;
-
-    const maxTime = allTransactions.reduce((max, t) => {
-      const time = t.date.getTime();
-      return time > max ? time : max;
-    }, -Infinity);
-
+    const maxTime = Math.max(...allTransactions.map((t) => t.date.getTime()));
     return isFinite(maxTime) ? new Date(maxTime) : null;
+  }, [allTransactions]);
+
+  const industryColorMap = useMemo(() => {
+    const industries = Array.from(new Set(allTransactions.map((t) => t.industry))).sort();
+    return industries.reduce<Record<string, string>>((acc, industry, index) => {
+      acc[industry] = CHART_COLORS[index % CHART_COLORS.length];
+      return acc;
+    }, {});
   }, [allTransactions]);
 
   const addFiles = useCallback((newFiles: CSVFile[]) => {
@@ -34,14 +35,12 @@ export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setFiles((prev) => {
         let businessName: string | undefined;
 
-        // If applyToAllWithSameName is true, we first find the business name of the target transaction
         if (applyToAllWithSameName) {
-          outer: for (const file of prev) {
-            for (const t of file.transactions) {
-              if (t.id === transactionId) {
-                businessName = t.businessName;
-                break outer;
-              }
+          for (const file of prev) {
+            const found = file.transactions.find((t) => t.id === transactionId);
+            if (found) {
+              businessName = found.businessName;
+              break;
             }
           }
         }
@@ -59,16 +58,7 @@ export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     [],
   );
 
-  const industryColorMap = useMemo(() => {
-    const uniqueIndustries = Array.from(new Set(allTransactions.map((t) => t.industry))).sort();
-    const mapping: Record<string, string> = {};
-    uniqueIndustries.forEach((industry, index) => {
-      mapping[industry] = CHART_COLORS[index % CHART_COLORS.length];
-    });
-    return mapping;
-  }, [allTransactions]);
-
-  const value = useMemo(
+  const contextValue = useMemo(
     () => ({
       files,
       addFiles,
@@ -89,5 +79,5 @@ export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     ],
   );
 
-  return <ExpenseDataContext.Provider value={value}>{children}</ExpenseDataContext.Provider>;
+  return <ExpenseDataContext.Provider value={contextValue}>{children}</ExpenseDataContext.Provider>;
 };
