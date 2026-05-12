@@ -1,9 +1,9 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { he, enUS } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useDashboardUI } from '../../context/UIContext';
+import { getDateLocale } from '../../utils/dateUtils';
 import styles from './Dashboard.module.css';
 
 interface TimeframeSelectorProps {
@@ -12,10 +12,11 @@ interface TimeframeSelectorProps {
 }
 
 const TimeframeSelector: React.FC<TimeframeSelectorProps> = ({ start, end }) => {
-  const { currentLanguage, translation, isRightToLeft } = useLanguage();
+  const { translation, isRightToLeft, currentLanguage } = useLanguage();
   const { timeframeViewType, setTimeframeViewType, navigateTimeframe } = useDashboardUI();
 
-  const dateLocale = currentLanguage === 'he' ? he : enUS;
+  const dateLocale = getDateLocale(currentLanguage);
+
   const NextIcon = isRightToLeft ? ChevronLeft : ChevronRight;
   const PrevIcon = isRightToLeft ? ChevronRight : ChevronLeft;
 

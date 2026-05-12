@@ -1,6 +1,8 @@
 import React from 'react';
 import { ArrowUpRight, Activity, HandCoins } from 'lucide-react';
+import { differenceInDays, differenceInWeeks, differenceInMonths } from 'date-fns';
 import { useLanguage } from '../../context/LanguageContext';
+import { useDashboardUI } from '../../context/UIContext';
 import {
   FORMAT_CURRENCY,
   PRIMARY_COLOR,
@@ -13,17 +15,42 @@ import styles from './Dashboard.module.css';
 
 interface ExpenseSummaryProps {
   transactions: Transaction[];
+  startDate: Date;
+  endDate: Date;
 }
 
-const ExpenseSummary: React.FC<ExpenseSummaryProps> = ({ transactions }) => {
+const ExpenseSummary: React.FC<ExpenseSummaryProps> = ({ transactions, startDate, endDate }) => {
   const { translation, currentLanguage } = useLanguage();
+  const { timeframeViewType } = useDashboardUI();
 
   const totalExpensesAmount = transactions.reduce(
     (accumulator, transaction) => accumulator + transaction.debitAmount,
     0,
   );
-  const averageTransactionAmount =
-    transactions.length > 0 ? totalExpensesAmount / transactions.length : 0;
+
+  const calculatePeriodicAverage = () => {
+    if (transactions.length === 0) return 0;
+
+    switch (timeframeViewType) {
+      case 'week': {
+        const days = Math.max(1, differenceInDays(endDate, startDate) + 1);
+        return totalExpensesAmount / days;
+      }
+      case 'month': {
+        const weeks = Math.max(1, differenceInWeeks(endDate, startDate) + 1);
+        return totalExpensesAmount / weeks;
+      }
+      case 'year': {
+        const months = Math.max(1, differenceInMonths(endDate, startDate) + 1);
+        return totalExpensesAmount / months;
+      }
+      default:
+        return 0;
+    }
+  };
+
+  const periodicAverage = calculatePeriodicAverage();
+  const timeframeLabel = translation.avgPeriodic[timeframeViewType];
 
   const summaryCards = [
     {
@@ -33,8 +60,8 @@ const ExpenseSummary: React.FC<ExpenseSummaryProps> = ({ transactions }) => {
       color: PRIMARY_COLOR,
     },
     {
-      title: translation.avgTransaction,
-      value: FORMAT_CURRENCY(averageTransactionAmount, currentLanguage),
+      title: timeframeLabel,
+      value: FORMAT_CURRENCY(periodicAverage, currentLanguage),
       icon: <Activity size={20} />,
       color: SUCCESS_COLOR,
     },

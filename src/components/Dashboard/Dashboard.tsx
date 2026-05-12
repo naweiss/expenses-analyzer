@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useCallback } from 'react';
+import { format, parse, isValid } from 'date-fns';
 import { useLanguage } from '../../context/LanguageContext';
 import { useDashboardUI } from '../../context/UIContext';
 import { useDashboardData } from '../../context/useDashboardData';
-import { format } from 'date-fns';
+import { getDateLocale } from '../../utils/dateUtils';
+import { TREND_DATE_FORMATS } from '../../utils/constants';
 import TimeframeSelector from './TimeframeSelector';
 import ExpenseSummary from './ExpenseSummary';
 import IndustryBreakdown from './IndustryBreakdown';
@@ -11,8 +13,19 @@ import TransactionTable from './TransactionTable';
 import styles from './Dashboard.module.css';
 
 const Dashboard: React.FC = () => {
-  const { translation } = useLanguage();
-  const { selectedIndustry } = useDashboardUI();
+  const { translation, currentLanguage } = useLanguage();
+  const {
+    selectedIndustries,
+    setSelectedIndustries,
+    timeframeViewType,
+    setTimeframeViewType,
+    setReferenceDate,
+    referenceDate,
+    selectedTrendPeriod,
+    setSelectedTrendPeriod,
+  } = useDashboardUI();
+
+  const dateLocale = getDateLocale(currentLanguage);
   const {
     timeframeStartDate,
     timeframeEndDate,
@@ -21,19 +34,62 @@ const Dashboard: React.FC = () => {
     timeTrendData,
   } = useDashboardData();
 
-  const [selectedTrendPeriod, setSelectedTrendPeriod] = useState<string | null>(null);
+  const handleChartClick = useCallback(
+    (label: string | null) => {
+      if (!label) {
+        setSelectedTrendPeriod(null);
+        return;
+      }
+
+      // If we're already at the lowest level (week), just filter the table
+      if (timeframeViewType === 'week') {
+        setSelectedTrendPeriod(selectedTrendPeriod === label ? null : label);
+        return;
+      }
+
+      // Otherwise, drill down into the selected period
+      const targetDate = parse(label, TREND_DATE_FORMATS[timeframeViewType], referenceDate, {
+        locale: dateLocale,
+      });
+      if (isValid(targetDate)) {
+        setReferenceDate(targetDate);
+        setTimeframeViewType(timeframeViewType === 'year' ? 'month' : 'week');
+      }
+
+      setSelectedTrendPeriod(null);
+    },
+    [
+      timeframeViewType,
+      referenceDate,
+      dateLocale,
+      setTimeframeViewType,
+      setReferenceDate,
+      selectedTrendPeriod,
+      setSelectedTrendPeriod,
+    ],
+  );
 
   // Unified filtering for both Summary Cards and Detailed Table
   const activeFilteredTransactions = useMemo(() => {
     let filtered = filteredTransactions;
-    if (selectedIndustry) {
-      filtered = filtered.filter((t) => t.industry === selectedIndustry);
+    if (selectedIndustries.length > 0) {
+      filtered = filtered.filter((t) => selectedIndustries.includes(t.industry));
     }
     if (selectedTrendPeriod) {
-      filtered = filtered.filter((t) => format(t.date, 'MMM dd') === selectedTrendPeriod);
+      filtered = filtered.filter(
+        (t) =>
+          format(t.date, TREND_DATE_FORMATS[timeframeViewType], { locale: dateLocale }) ===
+          selectedTrendPeriod,
+      );
     }
     return filtered;
-  }, [filteredTransactions, selectedIndustry, selectedTrendPeriod]);
+  }, [
+    filteredTransactions,
+    selectedIndustries,
+    selectedTrendPeriod,
+    timeframeViewType,
+    dateLocale,
+  ]);
 
   const translateIndustry = (industry: string) => {
     if (industry === 'unknown') return translation.unknown;
@@ -43,7 +99,11 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className={styles.dashboard}>
-      <ExpenseSummary transactions={activeFilteredTransactions} />
+      <ExpenseSummary
+        transactions={activeFilteredTransactions}
+        startDate={timeframeStartDate}
+        endDate={timeframeEndDate}
+      />
 
       <div className={styles.topRow}>
         <TimeframeSelector start={timeframeStartDate} end={timeframeEndDate} />
@@ -57,11 +117,13 @@ const Dashboard: React.FC = () => {
         <div className={styles.chartCard}>
           <h3>
             {translation.spendingTrend}{' '}
-            {selectedIndustry ? `(${translateIndustry(selectedIndustry)})` : ''}
+            {selectedIndustries.length > 0
+              ? `(${selectedIndustries.map(translateIndustry).join(', ')})`
+              : ''}
           </h3>
           <TimeTrendChart
             data={timeTrendData}
-            onBarClick={setSelectedTrendPeriod}
+            onBarClick={handleChartClick}
             selectedPeriod={selectedTrendPeriod}
           />
         </div>
@@ -69,11 +131,26 @@ const Dashboard: React.FC = () => {
 
       <div className={styles.detailsCard}>
         <div className={styles.detailsHeader}>
-          <h3>{translation.transactionDetails}</h3>
+          <div className={styles.headerTitleGroup}>
+            <h3>{translation.transactionDetails}</h3>
+          </div>
           <div className={styles.activeFilters}>
-            {selectedIndustry && (
-              <span className={styles.filterBadge}>{translateIndustry(selectedIndustry)}</span>
+            {(selectedIndustries.length > 0 || selectedTrendPeriod) && (
+              <button
+                className={styles.clearFiltersBtn}
+                onClick={() => {
+                  setSelectedIndustries([]);
+                  setSelectedTrendPeriod(null);
+                }}
+              >
+                {translation.reset}
+              </button>
             )}
+            {selectedIndustries.map((industry) => (
+              <span key={industry} className={styles.filterBadge}>
+                {translateIndustry(industry)}
+              </span>
+            ))}
             {selectedTrendPeriod && (
               <span className={styles.filterBadge}>{selectedTrendPeriod}</span>
             )}

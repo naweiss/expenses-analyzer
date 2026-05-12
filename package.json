@@ -7,11 +7,15 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint:eslint": "eslint .",
+    "lint:style": "stylelint \"src/**/*.css\"",
     "lint:prettier": "prettier --check .",
     "preview": "vite preview",
     "prepare": "husky"
   },
   "lint-staged": {
+    "*.css": [
+      "stylelint --fix"
+    ],
     "*.{ts,tsx,json,md,yml}": [
       "prettier --write",
       "eslint --fix"
@@ -41,6 +45,9 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.3",
+    "stylelint": "^17.11.0",
+    "stylelint-config-standard": "^40.0.0",
+    "stylelint-declaration-strict-value": "^1.11.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.1",
     "vite": "^8.0.10"

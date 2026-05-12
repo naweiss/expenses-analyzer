@@ -27,6 +27,8 @@ export const DEBIT_COLOR = '#f43f5e';
 export const SUCCESS_COLOR = '#10b981';
 export const WARNING_COLOR = '#f59e0b';
 
+export const DIMMED_OPACITY = 0.3;
+
 export const UI_COLORS = {
   text: '#64748b',
   background: '#f8fafc',
@@ -34,6 +36,12 @@ export const UI_COLORS = {
   activeBorder: '#1e293b',
   grid: '#f1f5f9',
 };
+
+export const TREND_DATE_FORMATS = {
+  year: 'MMM',
+  month: 'dd MMM',
+  week: 'dd MMM',
+} as const;
 
 export const CHART_CONFIG = {
   margins: { top: 10, bottom: 20, left: 10, right: 10 },
@@ -60,8 +68,8 @@ export const FORMAT_CURRENCY = (value: number, language: Language) => {
   const sign = value < 0 ? '-' : '';
 
   if (language === 'he') {
-    // Using RLM (\u200F) and LRM (\u200E) to ensure correct symbol and sign placement in RTL
-    return `\u200F${sign}${symbol}${formattedValue}`;
+    // Prepend LRM (\u200E) to ensure the minus sign stays on the left of the currency symbol in RTL
+    return `\u200E${sign}${symbol}${formattedValue}`;
   }
 
   return `${sign}${symbol}${formattedValue}`;

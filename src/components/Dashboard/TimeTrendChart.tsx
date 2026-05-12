@@ -10,12 +10,23 @@ import {
   Cell,
   LineChart,
   Line,
+  MouseHandlerDataParam,
+  TooltipValueType,
+  DotItemDotProps,
 } from 'recharts';
+import { NameType } from 'recharts/types/component/DefaultTooltipContent';
 import { BarChart3, Layers, LineChart as LineIcon } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useExpenseData } from '../../context/DataContext';
 import { useDashboardUI } from '../../context/UIContext';
-import { CHART_CONFIG, FORMAT_CURRENCY, PRIMARY_COLOR, UI_COLORS } from '../../utils/constants';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import {
+  CHART_CONFIG,
+  DIMMED_OPACITY,
+  FORMAT_CURRENCY,
+  PRIMARY_COLOR,
+  UI_COLORS,
+} from '../../utils/constants';
 import { TimeTrendPoint } from '../../utils/dataAggregator';
 import styles from './Dashboard.module.css';
 
@@ -27,6 +38,14 @@ interface TimeTrendChartProps {
 
 type ChartType = 'bar' | 'stackedBar' | 'line';
 
+interface ChartClickState extends MouseHandlerDataParam {
+  activePayload?: { payload: TimeTrendPoint }[];
+}
+
+interface CustomDotProps extends DotItemDotProps {
+  payload: TimeTrendPoint;
+}
+
 const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
   data: trendData,
   onBarClick,
@@ -34,7 +53,8 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
 }) => {
   const { isRightToLeft, currentLanguage, translation } = useLanguage();
   const { industryColorMap } = useExpenseData();
-  const { selectedIndustry } = useDashboardUI();
+  const { selectedIndustries } = useDashboardUI();
+  const isMobile = useIsMobile();
   const [chartType, setChartType] = useState<ChartType>('bar');
 
   const translateIndustry = (industry: string) => {
@@ -49,23 +69,27 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
     );
   }, [industryColorMap, trendData]);
 
-  const activeColor = selectedIndustry ? industryColorMap[selectedIndustry] : PRIMARY_COLOR;
+  const activeColor =
+    selectedIndustries.length === 1
+      ? (industryColorMap[selectedIndustries[0]] ?? PRIMARY_COLOR)
+      : PRIMARY_COLOR;
 
-  const handleChartClick = (data: unknown) => {
-    const chartData = data as { activePayload?: { payload: TimeTrendPoint }[] };
-    if (chartData?.activePayload && chartData.activePayload.length > 0) {
-      const { dateLabel } = chartData.activePayload[0].payload;
-      onBarClick(selectedPeriod === dateLabel ? null : dateLabel);
+  const handleChartClick = (state: ChartClickState) => {
+    const label = state.activeLabel ?? state.activePayload?.[0]?.payload?.dateLabel;
+    if (label) {
+      // Only allow selection if the clicked point has expenses
+      const point = trendData.find((d) => d.dateLabel === String(label));
+      if (point && point.totalAmount > 0) {
+        onBarClick(selectedPeriod === String(label) ? null : String(label));
+      }
     }
   };
 
   const chartMargins = {
-    ...CHART_CONFIG.margins,
-    // Note: Container is now forced to LTR.
-    // Left axis (English) needs left margin.
-    // Right axis (Hebrew) needs right margin.
-    left: isRightToLeft ? 10 : 20,
-    right: isRightToLeft ? 20 : 10,
+    top: 10,
+    bottom: 20,
+    left: isMobile ? 0 : isRightToLeft ? 10 : 20,
+    right: isMobile ? 0 : isRightToLeft ? 20 : 10,
   };
 
   const renderChart = () => {
@@ -88,16 +112,13 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
 
     const yAxis = (
       <YAxis
-        width={isRightToLeft ? 90 : 70}
+        width={50}
         axisLine={false}
         tickLine={false}
         domain={[0, 'auto']}
         tick={{
           fill: UI_COLORS.text,
-          fontSize: 11,
-          // Since container is now LTR:
-          // Right orientation labels should be 'start' (grow right)
-          // Left orientation labels should be 'end' (grow left)
+          fontSize: isMobile ? 9 : 10,
           textAnchor: isRightToLeft ? 'start' : 'end',
         }}
         tickFormatter={(value: number) =>
@@ -109,31 +130,22 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
 
     const tooltip = (
       <Tooltip
-        formatter={(value: unknown, name: unknown) => {
-          const val = Array.isArray(value) ? (value as unknown[])[0] : value;
+        formatter={(value: TooltipValueType | undefined, name: NameType | undefined) => {
+          if (value === undefined) return null;
+          const val = (Array.isArray(value) ? value[0] : value) as string | number | undefined;
           const numValue = typeof val === 'number' ? val : Number(val ?? 0);
-
-          // IMPORTANT: Return primitive null (not an array) to tell Recharts
-          // to completely skip rendering this item's <li> element.
           if (numValue <= 0) return null;
 
-          const nameVal = Array.isArray(name) ? (name as unknown[])[0] : name;
-          const translatedName = translateIndustry(
-            typeof nameVal === 'string' || typeof nameVal === 'number' ? String(nameVal) : '',
-          );
+          const translatedName = translateIndustry(String(name ?? ''));
 
-          const isTotalAmount = nameVal === 'totalAmount' || nameVal === translation.totalExpenses;
-
-          if (isTotalAmount) {
-            // For Total Spending: Return [value, ""] with separator="" result: "Value"
-            return [FORMAT_CURRENCY(numValue, currentLanguage), ''];
-          }
-
-          // For Breakdowns: Return [": " + value, name] with separator="" result: "Name: Value"
-          return [`: ${FORMAT_CURRENCY(numValue, currentLanguage)}`, translatedName];
+          return [FORMAT_CURRENCY(numValue, currentLanguage), translatedName];
         }}
-        separator=""
-        contentStyle={CHART_CONFIG.tooltip}
+        separator=": "
+        contentStyle={{
+          ...CHART_CONFIG.tooltip,
+          textAlign: isRightToLeft ? 'right' : 'left',
+          direction: isRightToLeft ? 'rtl' : 'ltr',
+        }}
         cursor={{ fill: UI_COLORS.background }}
         itemSorter={(item) => -(Number(item.value) || 0)}
       />
@@ -157,7 +169,9 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
                 <Cell
                   key={`cell-${index}`}
                   fill={activeColor}
-                  opacity={selectedPeriod && selectedPeriod !== point.dateLabel ? 0.3 : 1}
+                  opacity={
+                    selectedPeriod && selectedPeriod !== point.dateLabel ? DIMMED_OPACITY : 1
+                  }
                 />
               ))}
             </Bar>
@@ -176,10 +190,16 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
                 dataKey={industry}
                 stackId="a"
                 fill={industryColorMap[industry]}
-                opacity={selectedIndustry && selectedIndustry !== industry ? 0.3 : 1}
                 radius={[0, 0, 0, 0]}
                 cursor="pointer"
-              />
+              >
+                {trendData.map((point, index) => {
+                  const isDateSelected = !selectedPeriod || selectedPeriod === point.dateLabel;
+                  return (
+                    <Cell key={`cell-${index}`} opacity={isDateSelected ? 1 : DIMMED_OPACITY} />
+                  );
+                })}
+              </Bar>
             ))}
           </BarChart>
         );
@@ -190,21 +210,45 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
             {xAxis}
             {yAxis}
             {tooltip}
-            {industries.map((industry) => (
-              <Line
-                key={industry}
-                type="monotone"
-                dataKey={industry}
-                stroke={industryColorMap[industry]}
-                strokeWidth={2}
-                dot={{ r: 4, fill: industryColorMap[industry], strokeWidth: 0 }}
-                activeDot={{ r: 6, strokeWidth: 0 }}
-                opacity={selectedIndustry && selectedIndustry !== industry ? 0.2 : 1}
-                connectNulls
-              />
-            ))}
+            {industries.map((industry) => {
+              const lineOpacity = selectedPeriod ? DIMMED_OPACITY : 1;
+
+              return (
+                <Line
+                  key={industry}
+                  type="monotone"
+                  dataKey={industry}
+                  stroke={industryColorMap[industry]}
+                  strokeWidth={2}
+                  opacity={lineOpacity}
+                  dot={(props: CustomDotProps) => {
+                    const { cx, cy, payload } = props;
+                    if (cx === undefined || cy === undefined) return <React.Fragment />;
+
+                    // If a date is selected, hide all dots except the selected one
+                    if (selectedPeriod && selectedPeriod !== payload.dateLabel) {
+                      return <React.Fragment />;
+                    }
+
+                    return (
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={selectedPeriod ? 5 : 4}
+                        fill={industryColorMap[industry]}
+                        stroke="none"
+                        opacity={1}
+                      />
+                    );
+                  }}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  connectNulls
+                />
+              );
+            })}
           </LineChart>
         );
+
       default:
         return null;
     }

@@ -9,13 +9,15 @@ export const DashboardUIProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [internalFileIndex, setInternalFileIndex] = useState(0);
   const [timeframeViewType, setTimeframeViewType] = useState<TimeframeType>('month');
   const [internalReferenceDate, setInternalReferenceDate] = useState<Date | null>(null);
-  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
+  const [selectedTrendPeriod, setSelectedTrendPeriod] = useState<string | null>(null);
 
   const currentFileIndex = Math.min(internalFileIndex, files.length);
   const referenceDate = internalReferenceDate ?? latestTransactionDate ?? startOfToday();
 
   const navigateTimeframe = useCallback(
     (direction: number) => {
+      setSelectedTrendPeriod(null);
       setInternalReferenceDate((prev) => {
         const current = prev ?? latestTransactionDate ?? startOfToday();
         if (timeframeViewType === 'week') return addWeeks(current, direction);
@@ -26,32 +28,57 @@ export const DashboardUIProvider: React.FC<{ children: React.ReactNode }> = ({ c
     [timeframeViewType, latestTransactionDate],
   );
 
+  const setReferenceDate = useCallback((date: Date) => {
+    setInternalReferenceDate(date);
+    setSelectedTrendPeriod(null);
+  }, []);
+
+  const toggleIndustry = useCallback((industry: string) => {
+    setSelectedIndustries((prev) =>
+      prev.includes(industry) ? prev.filter((i) => i !== industry) : [...prev, industry],
+    );
+  }, []);
+
   const resetView = useCallback(() => {
     setInternalReferenceDate(null);
     setTimeframeViewType('month');
-    setSelectedIndustry(null);
+    setSelectedIndustries([]);
     setInternalFileIndex(0);
+    setSelectedTrendPeriod(null);
   }, []);
 
   const value = useMemo(
     () => ({
       currentFileIndex,
-      setCurrentFileIndex: setInternalFileIndex,
+      setCurrentFileIndex: (index: number) => {
+        setInternalFileIndex(index);
+        setSelectedTrendPeriod(null);
+      },
       timeframeViewType,
-      setTimeframeViewType,
+      setTimeframeViewType: (type: TimeframeType) => {
+        setTimeframeViewType(type);
+        setSelectedTrendPeriod(null);
+      },
       referenceDate,
+      setReferenceDate,
       navigateTimeframe,
       resetView,
-      selectedIndustry,
-      setSelectedIndustry,
+      selectedIndustries,
+      setSelectedIndustries,
+      toggleIndustry,
+      selectedTrendPeriod,
+      setSelectedTrendPeriod,
     }),
     [
       currentFileIndex,
       timeframeViewType,
       referenceDate,
+      setReferenceDate,
       navigateTimeframe,
       resetView,
-      selectedIndustry,
+      selectedIndustries,
+      toggleIndustry,
+      selectedTrendPeriod,
     ],
   );
 

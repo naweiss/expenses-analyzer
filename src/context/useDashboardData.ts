@@ -11,7 +11,8 @@ import {
 
 export const useDashboardData = () => {
   const { allTransactions, files } = useExpenseData();
-  const { currentFileIndex, timeframeViewType, referenceDate, selectedIndustry } = useDashboardUI();
+  const { currentFileIndex, timeframeViewType, referenceDate, selectedIndustries } =
+    useDashboardUI();
   const { currentLanguage } = useLanguage();
 
   const currentTransactions = useMemo(() => {
@@ -35,9 +36,9 @@ export const useDashboardData = () => {
   );
 
   const transactionsForTrendVisualization = useMemo(() => {
-    if (!selectedIndustry) return filteredTransactions;
-    return filteredTransactions.filter((t) => t.industry === selectedIndustry);
-  }, [filteredTransactions, selectedIndustry]);
+    if (selectedIndustries.length === 0) return filteredTransactions;
+    return filteredTransactions.filter((t) => selectedIndustries.includes(t.industry));
+  }, [filteredTransactions, selectedIndustries]);
 
   const timeTrendData = useMemo(
     () =>
@@ -64,5 +65,6 @@ export const useDashboardData = () => {
     industryBreakdownData,
     timeTrendData,
     currentTransactions,
+    allTransactions,
   };
 };

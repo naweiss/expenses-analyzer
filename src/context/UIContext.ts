@@ -7,10 +7,14 @@ export interface DashboardUIContextType {
   timeframeViewType: TimeframeType;
   setTimeframeViewType: (type: TimeframeType) => void;
   referenceDate: Date;
+  setReferenceDate: (date: Date) => void;
   navigateTimeframe: (direction: number) => void;
   resetView: () => void;
-  selectedIndustry: string | null;
-  setSelectedIndustry: (industry: string | null) => void;
+  selectedIndustries: string[];
+  setSelectedIndustries: (industries: string[]) => void;
+  toggleIndustry: (industry: string) => void;
+  selectedTrendPeriod: string | null;
+  setSelectedTrendPeriod: (period: string | null) => void;
 }
 
 export const DashboardUIContext = createContext<DashboardUIContextType | undefined>(undefined);

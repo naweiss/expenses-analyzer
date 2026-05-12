@@ -1,10 +1,21 @@
 import React, { useMemo } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+  LegendPayload,
+  TooltipValueType,
+} from 'recharts';
 import { PieSectorDataItem } from 'recharts/types/polar/Pie';
+import { NameType } from 'recharts/types/component/DefaultTooltipContent';
 import { useLanguage } from '../../context/LanguageContext';
 import { useExpenseData } from '../../context/DataContext';
 import { useDashboardUI } from '../../context/UIContext';
-import { CHART_CONFIG, FORMAT_CURRENCY, UI_COLORS } from '../../utils/constants';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { CHART_CONFIG, DIMMED_OPACITY, FORMAT_CURRENCY, UI_COLORS } from '../../utils/constants';
 import { IndustryTotal } from '../../utils/dataAggregator';
 import styles from './Dashboard.module.css';
 
@@ -15,7 +26,8 @@ interface IndustryBreakdownProps {
 const IndustryBreakdown: React.FC<IndustryBreakdownProps> = ({ data: industryData }) => {
   const { isRightToLeft, currentLanguage, translation } = useLanguage();
   const { industryColorMap } = useExpenseData();
-  const { setSelectedIndustry, selectedIndustry } = useDashboardUI();
+  const { toggleIndustry, selectedIndustries } = useDashboardUI();
+  const isMobile = useIsMobile();
 
   const activeIndustryData = useMemo(() => {
     return (industryData || []).filter((item) => item && item.totalAmount > 0);
@@ -28,14 +40,10 @@ const IndustryBreakdown: React.FC<IndustryBreakdownProps> = ({ data: industryDat
     return industry;
   };
 
-  const handleIndustrySelect = (industry: string) => {
-    setSelectedIndustry(selectedIndustry === industry ? null : industry);
-  };
-
   const legendPadding = {
-    paddingTop: '20px',
-    paddingLeft: isRightToLeft ? '0px' : '24px',
-    paddingRight: isRightToLeft ? '24px' : '0px',
+    paddingTop: isMobile ? '10px' : '20px',
+    paddingLeft: isRightToLeft ? '0px' : isMobile ? '10px' : '24px',
+    paddingRight: isRightToLeft ? (isMobile ? '10px' : '24px') : '0px',
   };
 
   return (
@@ -52,7 +60,7 @@ const IndustryBreakdown: React.FC<IndustryBreakdownProps> = ({ data: industryDat
             onClick={(data: PieSectorDataItem | null) => {
               const industry = (data?.payload as IndustryTotal | undefined)?.industry;
               if (industry) {
-                handleIndustrySelect(industry);
+                toggleIndustry(industry);
               }
             }}
             cursor="pointer"
@@ -62,27 +70,35 @@ const IndustryBreakdown: React.FC<IndustryBreakdownProps> = ({ data: industryDat
               <Cell
                 key={`cell-${entry.industry}`}
                 fill={industryColorMap[entry.industry] || UI_COLORS.border}
-                stroke={selectedIndustry === entry.industry ? UI_COLORS.activeBorder : 'none'}
+                stroke={
+                  selectedIndustries.includes(entry.industry) ? UI_COLORS.activeBorder : 'none'
+                }
                 strokeWidth={2}
-                opacity={selectedIndustry && selectedIndustry !== entry.industry ? 0.3 : 1}
+                opacity={
+                  selectedIndustries.length > 0 && !selectedIndustries.includes(entry.industry)
+                    ? DIMMED_OPACITY
+                    : 1
+                }
               />
             ))}
           </Pie>
           <Tooltip
-            formatter={(value: unknown, name: unknown) => {
-              const val = Array.isArray(value) ? (value as unknown[])[0] : value;
+            formatter={(value: TooltipValueType | undefined, name: NameType | undefined) => {
+              if (value === undefined) return [null, null];
+              const val = (Array.isArray(value) ? value[0] : value) as string | number | undefined;
               const numValue = typeof val === 'number' ? val : Number(val ?? 0);
               if (numValue === 0) return [null, null];
 
-              const nameVal = Array.isArray(name) ? (name as unknown[])[0] : name;
-              const translatedName = translateIndustry(
-                typeof nameVal === 'string' || typeof nameVal === 'number' ? String(nameVal) : '',
-              );
+              const translatedName = translateIndustry(String(name ?? ''));
 
               return [FORMAT_CURRENCY(numValue, currentLanguage), translatedName];
             }}
             separator=": "
-            contentStyle={CHART_CONFIG.tooltip}
+            contentStyle={{
+              ...CHART_CONFIG.tooltip,
+              textAlign: isRightToLeft ? 'right' : 'left',
+              direction: isRightToLeft ? 'rtl' : 'ltr',
+            }}
           />
           <Legend
             align={isRightToLeft ? 'right' : 'left'}
@@ -90,11 +106,27 @@ const IndustryBreakdown: React.FC<IndustryBreakdownProps> = ({ data: industryDat
             layout="horizontal"
             iconType="circle"
             wrapperStyle={legendPadding}
-            formatter={(value: string) => translateIndustry(value)}
-            onClick={(props: unknown) => {
-              const payload = props as { value?: string };
-              if (payload?.value) {
-                handleIndustrySelect(payload.value);
+            formatter={(value: string) => (
+              <span
+                style={{
+                  color: selectedIndustries.includes(value)
+                    ? 'var(--color-primary)'
+                    : 'var(--color-text-main)',
+                  fontWeight: selectedIndustries.includes(value) ? 600 : 400,
+                  cursor: 'pointer',
+                  padding: '2px 4px',
+                  borderRadius: '4px',
+                  background: selectedIndustries.includes(value)
+                    ? 'var(--color-primary-soft)'
+                    : 'transparent',
+                }}
+              >
+                {translateIndustry(value)}
+              </span>
+            )}
+            onClick={(props: LegendPayload) => {
+              if (props?.value) {
+                toggleIndustry(props.value);
               }
             }}
           />

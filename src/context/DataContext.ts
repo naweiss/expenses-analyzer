@@ -5,6 +5,11 @@ export interface ExpenseDataContextType {
   files: CSVFile[];
   addFiles: (newFiles: CSVFile[]) => void;
   removeFile: (fileId: string) => void;
+  updateTransaction: (
+    transactionId: string,
+    updates: Partial<Transaction>,
+    applyToAllWithSameName?: boolean,
+  ) => void;
   allTransactions: Transaction[];
   industryColorMap: Record<string, string>;
   latestTransactionDate: Date | null;

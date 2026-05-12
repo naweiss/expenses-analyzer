@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { CSVFile } from '../utils/csvParser';
+import { CSVFile, Transaction } from '../utils/csvParser';
 import { CHART_COLORS } from '../utils/constants';
 import { ExpenseDataContext } from './DataContext';
 
@@ -12,7 +12,13 @@ export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const latestTransactionDate = useMemo(() => {
     if (allTransactions.length === 0) return null;
-    return new Date(Math.max(...allTransactions.map((t) => t.date.getTime())));
+
+    const maxTime = allTransactions.reduce((max, t) => {
+      const time = t.date.getTime();
+      return time > max ? time : max;
+    }, -Infinity);
+
+    return isFinite(maxTime) ? new Date(maxTime) : null;
   }, [allTransactions]);
 
   const addFiles = useCallback((newFiles: CSVFile[]) => {
@@ -22,6 +28,36 @@ export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const removeFile = useCallback((fileId: string) => {
     setFiles((prev) => prev.filter((file) => file.id !== fileId));
   }, []);
+
+  const updateTransaction = useCallback(
+    (transactionId: string, updates: Partial<Transaction>, applyToAllWithSameName = false) => {
+      setFiles((prev) => {
+        let businessName: string | undefined;
+
+        // If applyToAllWithSameName is true, we first find the business name of the target transaction
+        if (applyToAllWithSameName) {
+          outer: for (const file of prev) {
+            for (const t of file.transactions) {
+              if (t.id === transactionId) {
+                businessName = t.businessName;
+                break outer;
+              }
+            }
+          }
+        }
+
+        return prev.map((file) => ({
+          ...file,
+          transactions: file.transactions.map((t): Transaction => {
+            const isMatch =
+              t.id === transactionId || (applyToAllWithSameName && t.businessName === businessName);
+            return isMatch ? { ...t, ...updates } : t;
+          }),
+        }));
+      });
+    },
+    [],
+  );
 
   const industryColorMap = useMemo(() => {
     const uniqueIndustries = Array.from(new Set(allTransactions.map((t) => t.industry))).sort();
@@ -37,11 +73,20 @@ export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       files,
       addFiles,
       removeFile,
+      updateTransaction,
       allTransactions,
       industryColorMap,
       latestTransactionDate,
     }),
-    [files, addFiles, removeFile, allTransactions, industryColorMap, latestTransactionDate],
+    [
+      files,
+      addFiles,
+      removeFile,
+      updateTransaction,
+      allTransactions,
+      industryColorMap,
+      latestTransactionDate,
+    ],
   );
 
   return <ExpenseDataContext.Provider value={value}>{children}</ExpenseDataContext.Provider>;

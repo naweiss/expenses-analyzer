@@ -1,0 +1,67 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "plugins": ["stylelint-declaration-strict-value"],
+  "rules": {
+    "scale-unlimited/declaration-strict-value": [
+      [
+        "/color/",
+        "fill",
+        "stroke",
+        "margin",
+        "padding",
+        "gap",
+        "font-size",
+        "inline-size",
+        "block-size",
+        "max-inline-size",
+        "max-block-size",
+        "width",
+        "height",
+        "border",
+        "border-top",
+        "border-right",
+        "border-bottom",
+        "border-left",
+        "border-inline",
+        "border-inline-start",
+        "border-inline-end",
+        "border-block",
+        "border-block-start",
+        "border-block-end"
+      ],
+      {
+        "ignoreValues": [
+          "0",
+          "transparent",
+          "inherit",
+          "currentColor",
+          "initial",
+          "auto",
+          "none",
+          "100%",
+          "100vh",
+          "100vw",
+          "max-content",
+          "min-content",
+          "solid",
+          "dashed",
+          "dotted",
+          "/^\\d+(?:\\.\\d+)?%$/"
+        ],
+        "message": "Hard-coded values are not allowed. Please use a CSS variable from index.css instead."
+      }
+    ],
+    "import-notation": "string",
+    "selector-pseudo-class-no-unknown": [
+      true,
+      {
+        "ignorePseudoClasses": ["global"]
+      }
+    ],
+    "color-function-notation": "legacy",
+    "alpha-value-notation": "number",
+    "color-hex-length": "long",
+    "media-feature-range-notation": "prefix",
+    "selector-class-pattern": null
+  }
+}

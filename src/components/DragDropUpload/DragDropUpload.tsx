@@ -1,34 +1,15 @@
-import React, { useCallback } from 'react';
-import { useDropzone, FileRejection, DropEvent } from 'react-dropzone';
+import React from 'react';
+import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useExpenseData } from '../../context/DataContext';
-import { parseCSV, CSVFile } from '../../utils/csvParser';
+import { useFileParsing } from '../../hooks/useFileParsing';
 import styles from './DragDropUpload.module.css';
 
 const DragDropUpload: React.FC = () => {
   const { translation } = useLanguage();
-  const { addFiles, files: uploadedFiles, removeFile } = useExpenseData();
-
-  const handleFilesDrop = useCallback(
-    (acceptedFiles: File[], _fileRejections: FileRejection[], _event: DropEvent) => {
-      const csvFilesToProcess = acceptedFiles.filter((file) =>
-        file.name.toLowerCase().endsWith('.csv'),
-      );
-
-      void (async () => {
-        const newlyParsedFiles: CSVFile[] = await Promise.all(
-          csvFilesToProcess.map(async (file) => ({
-            id: crypto.randomUUID(),
-            name: file.name,
-            transactions: await parseCSV(file),
-          })),
-        );
-        addFiles(newlyParsedFiles);
-      })();
-    },
-    [addFiles],
-  );
+  const { files: uploadedFiles, removeFile } = useExpenseData();
+  const { handleFilesDrop } = useFileParsing();
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFilesDrop,
