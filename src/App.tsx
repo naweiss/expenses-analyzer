@@ -8,6 +8,7 @@ import { DashboardUIProvider } from './context/UIProvider';
 import { useDashboardUI } from './context/UIContext';
 import DragDropUpload from './components/DragDropUpload/DragDropUpload';
 import FileNavigator from './components/FileNavigator/FileNavigator';
+import ErrorBoundary from './components/UI/ErrorBoundary/ErrorBoundary';
 import styles from './App.module.css';
 
 const Dashboard = lazy(() => import('./components/Dashboard/Dashboard'));
@@ -42,22 +43,24 @@ const AppContent: React.FC = () => {
       </header>
 
       <main className={styles.main}>
-        {files.length === 0 ? (
-          <div className={styles.welcome}>
-            <h2>{translation.welcome}</h2>
-            <p>{translation.welcomeSub}</p>
-            <DragDropUpload />
-          </div>
-        ) : (
-          <>
-            <FileNavigator />
-            <div className={styles.dashboardWrapper}>
-              <Suspense fallback={<div className={styles.loading}>Loading Dashboard...</div>}>
-                <Dashboard />
-              </Suspense>
+        <ErrorBoundary>
+          {files.length === 0 ? (
+            <div className={styles.welcome}>
+              <h2>{translation.welcome}</h2>
+              <p>{translation.welcomeSub}</p>
+              <DragDropUpload />
             </div>
-          </>
-        )}
+          ) : (
+            <>
+              <FileNavigator />
+              <div className={styles.dashboardWrapper}>
+                <Suspense fallback={<div className={styles.loading}>Loading Dashboard...</div>}>
+                  <Dashboard />
+                </Suspense>
+              </div>
+            </>
+          )}
+        </ErrorBoundary>
       </main>
     </div>
   );

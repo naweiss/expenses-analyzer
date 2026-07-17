@@ -116,6 +116,17 @@
   background: var(--color-primary-soft);
 }
 
+.exportBox {
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.exportBox:hover {
+  background: var(--color-primary-soft);
+}
+
 .removeBtn {
   background: transparent;
   border: none;
@@ -139,7 +150,7 @@
 .dragOverlay {
   position: absolute;
   inset: 0;
-  background: var(--color-primary);
+  background: var(--color-primary-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -148,6 +159,7 @@
   z-index: 20;
   pointer-events: none;
   border-radius: var(--border-radius-xl);
+  backdrop-filter: var(--blur-md);
 }
 
 /* Mobile Responsiveness */

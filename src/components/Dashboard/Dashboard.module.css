@@ -193,12 +193,6 @@
   font-weight: 600;
 }
 
-.headerTitleGroup {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-4);
-}
-
 .activeFilters {
   display: flex;
   gap: var(--spacing-2);

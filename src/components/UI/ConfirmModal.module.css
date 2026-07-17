@@ -1,0 +1,42 @@
+.actions {
+  display: flex;
+  gap: var(--spacing-3);
+  margin-block-start: var(--spacing-4);
+}
+
+.btn {
+  flex: 1;
+  padding: var(--spacing-2);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.confirmBtn {
+  background: var(--color-primary);
+  color: var(--color-card);
+}
+
+.confirmBtn:hover {
+  background: var(--color-primary);
+}
+
+.cancelBtn {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+.cancelBtn:hover {
+  background: var(--color-border);
+  color: var(--color-text-main);
+}
+
+.message {
+  font-size: var(--font-size-md);
+  color: var(--color-text-main);
+  line-height: 1.5;
+  margin: 0;
+}

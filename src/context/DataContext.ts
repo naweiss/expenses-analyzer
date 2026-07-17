@@ -3,7 +3,11 @@ import { CSVFile, Transaction } from '../utils/csvParser';
 
 export interface ExpenseDataContextType {
   files: CSVFile[];
-  addFiles: (newFiles: CSVFile[]) => void;
+  addFiles: (
+    newFiles: CSVFile[],
+    importedCategoryRules?: Record<string, string>,
+    importedNotesRules?: Record<string, string>,
+  ) => void;
   removeFile: (fileId: string) => void;
   updateTransaction: (
     transactionId: string,
@@ -13,6 +17,8 @@ export interface ExpenseDataContextType {
   allTransactions: Transaction[];
   industryColorMap: Record<string, string>;
   latestTransactionDate: Date | null;
+  categoryRules: Record<string, string>;
+  notesRules: Record<string, string>;
 }
 
 export const ExpenseDataContext = createContext<ExpenseDataContextType | undefined>(undefined);

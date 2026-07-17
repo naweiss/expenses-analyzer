@@ -131,9 +131,7 @@ const Dashboard: React.FC = () => {
 
       <div className={styles.detailsCard}>
         <div className={styles.detailsHeader}>
-          <div className={styles.headerTitleGroup}>
-            <h3>{translation.transactionDetails}</h3>
-          </div>
+          <h3>{translation.transactionDetails}</h3>
           <div className={styles.activeFilters}>
             {(selectedIndustries.length > 0 || selectedTrendPeriod) && (
               <button

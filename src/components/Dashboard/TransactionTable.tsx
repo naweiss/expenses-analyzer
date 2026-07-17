@@ -7,32 +7,25 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useExpenseData } from '../../context/DataContext';
 import { getDateLocale } from '../../utils/dateUtils';
 import { FORMAT_CURRENCY, UI_COLORS } from '../../utils/constants';
+import { useSort } from '../../hooks/useSort';
+import { TransactionEditModal, EditState } from './TransactionEditModal';
 import styles from './TransactionTable.module.css';
 
 interface TransactionTableProps {
   transactions: Transaction[];
 }
 
-type SortConfig = {
-  key: 'date' | 'debitAmount' | 'businessName' | 'industry';
-  direction: 'asc' | 'desc';
-} | null;
-
-interface EditState {
-  transaction: Transaction;
-  field: 'category' | 'notes';
-  value: string;
-  applyToAll: boolean;
-  showCustomInput?: boolean;
-}
-
 const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => {
   const { translation, currentLanguage } = useLanguage();
-  const { industryColorMap, updateTransaction } = useExpenseData();
+  const { industryColorMap } = useExpenseData();
 
   const dateLocale = getDateLocale(currentLanguage);
 
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'date', direction: 'desc' });
+  const {
+    sortedItems: sortedTransactions,
+    sortConfig,
+    requestSort: handleSort,
+  } = useSort<Transaction>(transactions, { key: 'date', direction: 'desc' });
   const [editState, setEditState] = useState<EditState | null>(null);
   const [hoveredTooltip, setHoveredTooltip] = useState<{
     content: React.ReactNode;
@@ -48,36 +41,9 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
 
   const industries = useMemo(() => Object.keys(industryColorMap), [industryColorMap]);
 
-  const sortedTransactions = useMemo(() => {
-    const items = [...transactions];
-    if (sortConfig !== null) {
-      items.sort((a, b) => {
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
-
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-    return items;
-  }, [transactions, sortConfig]);
-
   if (transactions.length === 0) {
     return null;
   }
-
-  const handleSort = (key: 'date' | 'debitAmount' | 'businessName' | 'industry') => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
 
   const getSortIcon = (key: 'date' | 'debitAmount' | 'businessName' | 'industry') => {
     if (sortConfig?.key !== key) {
@@ -113,18 +79,6 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
       color: color,
       borderColor: `${color}40`,
     };
-  };
-
-  const handleSaveEdit = () => {
-    if (!editState) return;
-
-    const updates: Partial<Transaction> =
-      editState.field === 'category'
-        ? { industry: editState.value }
-        : { userNotes: editState.value };
-
-    updateTransaction(editState.transaction.id, updates, editState.applyToAll);
-    setEditState(null);
   };
 
   return (
@@ -279,104 +233,11 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
           document.body,
         )}
 
-      {editState && (
-        <div className={styles.editOverlay} onClick={() => setEditState(null)}>
-          <div className={styles.editCard} onClick={(e) => e.stopPropagation()}>
-            <h4>
-              {editState.field === 'category' ? translation.editCategory : translation.editNotes}
-            </h4>
-
-            {editState.field === 'category' ? (
-              <>
-                <div className={styles.categoryList}>
-                  {industries.map((industry) => {
-                    const isSelected = editState.value === industry && !editState.showCustomInput;
-                    return (
-                      <span
-                        key={industry}
-                        className={`${styles.categoryOption} ${isSelected ? styles.selected : ''}`}
-                        style={getTagStyle(industry, isSelected)}
-                        onClick={() =>
-                          setEditState({ ...editState, value: industry, showCustomInput: false })
-                        }
-                      >
-                        {translateValue(industry)}
-                      </span>
-                    );
-                  })}
-                  <span
-                    className={`${styles.categoryOption} ${editState.showCustomInput ? styles.selected : ''}`}
-                    style={
-                      editState.showCustomInput
-                        ? {
-                            backgroundColor: 'var(--color-primary)',
-                            color: 'white',
-                            borderColor: 'var(--color-primary)',
-                          }
-                        : {}
-                    }
-                    onClick={() => setEditState({ ...editState, showCustomInput: true })}
-                  >
-                    {translation.customCategory}
-                  </span>
-                </div>
-                {editState.showCustomInput && (
-                  <input
-                    type="text"
-                    className={styles.editInput}
-                    value={
-                      editState.value === editState.transaction.industry ? '' : editState.value
-                    }
-                    onChange={(e) => setEditState({ ...editState, value: e.target.value })}
-                    placeholder={translation.newCategory}
-                    autoFocus
-                  />
-                )}
-              </>
-            ) : (
-              <textarea
-                className={styles.editInput}
-                value={editState.value}
-                onChange={(e) => setEditState({ ...editState, value: e.target.value })}
-                rows={3}
-                placeholder={translation.notes}
-                autoFocus
-              />
-            )}
-
-            <div className={styles.checkboxGroup}>
-              <label className={styles.checkboxContainer}>
-                <div className={styles.checkboxLabelRow}>
-                  <input
-                    type="checkbox"
-                    checked={editState.applyToAll}
-                    onChange={(e) => setEditState({ ...editState, applyToAll: e.target.checked })}
-                  />
-                  <span>{translation.applyToAll}</span>
-                </div>
-                {editState.applyToAll && (
-                  <div className={styles.applyHint}>
-                    {translation.applyToAllHint}{' '}
-                    <strong>{editState.transaction.businessName}</strong>
-                  </div>
-                )}
-              </label>
-            </div>
-
-            <div className={styles.editActions}>
-              <button
-                className={`${styles.btn} ${styles.cancelBtn}`}
-                onClick={() => setEditState(null)}
-              >
-                {translation.cancel}
-              </button>
-              <button className={`${styles.btn} ${styles.saveBtn}`} onClick={handleSaveEdit}>
-                {translation.save}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TransactionEditModal
+        editState={editState}
+        setEditState={setEditState}
+        industries={industries}
+      />
     </div>
   );
 };
