@@ -1,0 +1,28 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modalCard {
+  background: var(--color-card);
+  padding: var(--spacing-6);
+  border-radius: var(--border-radius-2xl);
+  box-shadow: var(--shadow-xl);
+  width: 90%;
+  max-width: var(--modal-max-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.modalCard h4 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-main);
+}

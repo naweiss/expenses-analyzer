@@ -3,6 +3,7 @@ import { addWeeks, addMonths, addYears, startOfToday } from 'date-fns';
 import { TimeframeType } from '../utils/dataAggregator';
 import { useExpenseData } from './DataContext';
 import { DashboardUIContext } from './UIContext';
+import { ConfirmModal } from '../components/UI/ConfirmModal';
 
 export const DashboardUIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { latestTransactionDate, files } = useExpenseData();
@@ -11,6 +12,16 @@ export const DashboardUIProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [internalReferenceDate, setInternalReferenceDate] = useState<Date | null>(null);
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   const [selectedTrendPeriod, setSelectedTrendPeriod] = useState<string | null>(null);
+
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    message: string;
+    resolver: ((value: boolean) => void) | null;
+  }>({
+    isOpen: false,
+    message: '',
+    resolver: null,
+  });
 
   const currentFileIndex = Math.min(internalFileIndex, files.length);
   const referenceDate = internalReferenceDate ?? latestTransactionDate ?? startOfToday();
@@ -47,6 +58,25 @@ export const DashboardUIProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setSelectedTrendPeriod(null);
   }, []);
 
+  const requestConfirmation = useCallback((message: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      setConfirmState({
+        isOpen: true,
+        message,
+        resolver: resolve,
+      });
+    });
+  }, []);
+
+  const handleConfirmAction = useCallback((value: boolean) => {
+    setConfirmState((prev) => {
+      if (prev.resolver) {
+        prev.resolver(value);
+      }
+      return { ...prev, isOpen: false, message: '', resolver: null };
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       currentFileIndex,
@@ -68,6 +98,7 @@ export const DashboardUIProvider: React.FC<{ children: React.ReactNode }> = ({ c
       toggleIndustry,
       selectedTrendPeriod,
       setSelectedTrendPeriod,
+      requestConfirmation,
     }),
     [
       currentFileIndex,
@@ -79,8 +110,19 @@ export const DashboardUIProvider: React.FC<{ children: React.ReactNode }> = ({ c
       selectedIndustries,
       toggleIndustry,
       selectedTrendPeriod,
+      requestConfirmation,
     ],
   );
 
-  return <DashboardUIContext.Provider value={value}>{children}</DashboardUIContext.Provider>;
+  return (
+    <DashboardUIContext.Provider value={value}>
+      {children}
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        message={confirmState.message}
+        onConfirm={() => handleConfirmAction(true)}
+        onCancel={() => handleConfirmAction(false)}
+      />
+    </DashboardUIContext.Provider>
+  );
 };

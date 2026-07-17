@@ -27,7 +27,11 @@
         "border-inline-end",
         "border-block",
         "border-block-start",
-        "border-block-end"
+        "border-block-end",
+        "background",
+        "backdrop-filter",
+        "/shadow/",
+        "/radius/"
       ],
       {
         "ignoreValues": [

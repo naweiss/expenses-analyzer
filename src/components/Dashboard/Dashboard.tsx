@@ -10,10 +10,14 @@ import ExpenseSummary from './ExpenseSummary';
 import IndustryBreakdown from './IndustryBreakdown';
 import TimeTrendChart from './TimeTrendChart';
 import TransactionTable from './TransactionTable';
+import { Download } from 'lucide-react';
+import { useExpenseData } from '../../context/DataContext';
+import { exportToCSV } from '../../utils/csvExporter';
 import styles from './Dashboard.module.css';
 
 const Dashboard: React.FC = () => {
   const { translation, currentLanguage } = useLanguage();
+  const { files, categoryRules, notesRules } = useExpenseData();
   const {
     selectedIndustries,
     setSelectedIndustries,
@@ -133,6 +137,15 @@ const Dashboard: React.FC = () => {
         <div className={styles.detailsHeader}>
           <div className={styles.headerTitleGroup}>
             <h3>{translation.transactionDetails}</h3>
+            <button
+              type="button"
+              className={styles.exportBtn}
+              onClick={() => exportToCSV(files, categoryRules, notesRules)}
+              title={translation.exportCSV}
+            >
+              <Download size={14} />
+              <span>{translation.exportCSV}</span>
+            </button>
           </div>
           <div className={styles.activeFilters}>
             {(selectedIndustries.length > 0 || selectedTrendPeriod) && (

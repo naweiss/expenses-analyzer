@@ -13,6 +13,13 @@ export interface ExpenseDataContextType {
   allTransactions: Transaction[];
   industryColorMap: Record<string, string>;
   latestTransactionDate: Date | null;
+  categoryRules: Record<string, string>;
+  notesRules: Record<string, string>;
+  importBackup: (
+    backupFiles: CSVFile[],
+    categoryRules: Record<string, string>,
+    notesRules: Record<string, string>,
+  ) => void;
 }
 
 export const ExpenseDataContext = createContext<ExpenseDataContextType | undefined>(undefined);

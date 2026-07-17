@@ -2,6 +2,7 @@
   /* Colors */
   --color-primary: #6366f1;
   --color-primary-soft: rgb(99, 102, 241, 0.1);
+  --color-primary-overlay: rgb(99, 102, 241, 0.9);
   --color-bg: #f8fafc;
   --color-card: #ffffff;
   --color-card-soft: rgb(255, 255, 255, 0.1);
@@ -67,6 +68,7 @@
   --shadow-md: 0 1px 3px rgb(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0, 0, 0, 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0, 0, 0, 0.1), 0 10px 10px -5px rgb(0, 0, 0, 0.04);
+  --shadow-focus: 0 0 0 2px var(--color-primary-soft);
 
   /* Icons */
   --icon-size-xs: 0.875rem;
@@ -74,9 +76,10 @@
   --icon-size-md: 1.25rem;
   --icon-size-lg: 1.5rem;
 
-  /* Opacity */
+  /* Opacity & Blur */
   --opacity-dimmed: 0.3;
   --color-overlay: rgb(0, 0, 0, 0.4);
+  --blur-md: 4px;
   --transition-base: all 0.2s ease;
 }
 

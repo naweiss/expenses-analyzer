@@ -5,6 +5,8 @@ import { ExpenseDataContext } from './DataContext';
 
 export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [files, setFiles] = useState<CSVFile[]>([]);
+  const [categoryRules, setCategoryRules] = useState<Record<string, string>>({});
+  const [notesRules, setNotesRules] = useState<Record<string, string>>({});
 
   const allTransactions = useMemo(() => {
     return files.flatMap((file) => file.transactions);
@@ -26,26 +28,40 @@ export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, []);
 
   const removeFile = useCallback((fileId: string) => {
-    setFiles((prev) => prev.filter((file) => file.id !== fileId));
+    setFiles((prev) => {
+      const remainingFiles = prev.filter((file) => file.id !== fileId);
+      if (remainingFiles.length === 0) {
+        setCategoryRules({});
+        setNotesRules({});
+      }
+      return remainingFiles;
+    });
   }, []);
 
   const updateTransaction = useCallback(
     (transactionId: string, updates: Partial<Transaction>, applyToAllWithSameName = false) => {
-      setFiles((prev) => {
-        let businessName: string | undefined;
-
-        // If applyToAllWithSameName is true, we first find the business name of the target transaction
-        if (applyToAllWithSameName) {
-          outer: for (const file of prev) {
-            for (const t of file.transactions) {
-              if (t.id === transactionId) {
-                businessName = t.businessName;
-                break outer;
-              }
-            }
+      let businessName: string | undefined;
+      outer: for (const file of files) {
+        for (const t of file.transactions) {
+          if (t.id === transactionId) {
+            businessName = t.businessName;
+            break outer;
           }
         }
+      }
 
+      if (applyToAllWithSameName && businessName) {
+        const newIndustry = updates.industry;
+        if (newIndustry !== undefined) {
+          setCategoryRules((prevRules) => ({ ...prevRules, [businessName]: newIndustry }));
+        }
+        const newNotes = updates.userNotes;
+        if (newNotes !== undefined) {
+          setNotesRules((prevRules) => ({ ...prevRules, [businessName]: newNotes }));
+        }
+      }
+
+      setFiles((prev) => {
         return prev.map((file) => ({
           ...file,
           transactions: file.transactions.map((t): Transaction => {
@@ -55,6 +71,19 @@ export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
           }),
         }));
       });
+    },
+    [files],
+  );
+
+  const importBackup = useCallback(
+    (
+      backupFiles: CSVFile[],
+      importedCategoryRules: Record<string, string>,
+      importedNotesRules: Record<string, string>,
+    ) => {
+      setFiles(backupFiles);
+      setCategoryRules(importedCategoryRules);
+      setNotesRules(importedNotesRules);
     },
     [],
   );
@@ -77,6 +106,9 @@ export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       allTransactions,
       industryColorMap,
       latestTransactionDate,
+      categoryRules,
+      notesRules,
+      importBackup,
     }),
     [
       files,
@@ -86,6 +118,9 @@ export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       allTransactions,
       industryColorMap,
       latestTransactionDate,
+      categoryRules,
+      notesRules,
+      importBackup,
     ],
   );
 

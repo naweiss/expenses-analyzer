@@ -1,15 +1,16 @@
 import React, { useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { FileText, Plus, X, Layers } from 'lucide-react';
+import { FileText, Plus, X, Layers, Download } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useExpenseData } from '../../context/DataContext';
 import { useDashboardUI } from '../../context/UIContext';
 import { useFileParsing } from '../../hooks/useFileParsing';
+import { exportToCSV } from '../../utils/csvExporter';
 import styles from './FileNavigator.module.css';
 
 const FileNavigator: React.FC = () => {
   const { translation } = useLanguage();
-  const { files, removeFile } = useExpenseData();
+  const { files, removeFile, categoryRules, notesRules } = useExpenseData();
   const { currentFileIndex, setCurrentFileIndex } = useDashboardUI();
   const { handleFilesDrop } = useFileParsing();
 
@@ -72,6 +73,17 @@ const FileNavigator: React.FC = () => {
         >
           <Plus size={20} />
         </button>
+
+        {files.length > 0 && (
+          <button
+            className={`${styles.navBox} ${styles.exportBox} ${styles.staticBtn}`}
+            onClick={() => exportToCSV(files, categoryRules, notesRules)}
+            title={translation.exportCSV}
+          >
+            <Download size={18} />
+            <span className={styles.btnText}>{translation.exportCSV}</span>
+          </button>
+        )}
       </div>
 
       {isDragActive && (

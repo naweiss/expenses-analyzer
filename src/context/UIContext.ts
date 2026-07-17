@@ -15,6 +15,7 @@ export interface DashboardUIContextType {
   toggleIndustry: (industry: string) => void;
   selectedTrendPeriod: string | null;
   setSelectedTrendPeriod: (period: string | null) => void;
+  requestConfirmation: (message: string) => Promise<boolean>;
 }
 
 export const DashboardUIContext = createContext<DashboardUIContextType | undefined>(undefined);
