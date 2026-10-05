@@ -63,7 +63,7 @@ const he: TranslationSchema = {
   month: 'חודש',
   year: 'שנה',
   industryBreakdown: 'פילוח לפי ענפים',
-  spendingTrend: 'גרף' + ' הוצאות',
+  spendingTrend: 'גרף הוצאות',
   totalExpenses: 'סה"כ הוצאות',
   avgPeriodic: {
     week: 'הוצאה יומית ממוצעת',

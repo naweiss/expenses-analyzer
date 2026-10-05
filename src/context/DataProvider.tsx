@@ -14,12 +14,7 @@ export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const latestTransactionDate = useMemo(() => {
     if (allTransactions.length === 0) return null;
-
-    const maxTime = allTransactions.reduce((max, t) => {
-      const time = t.date.getTime();
-      return time > max ? time : max;
-    }, -Infinity);
-
+    const maxTime = Math.max(...allTransactions.map((t) => t.date.getTime()));
     return isFinite(maxTime) ? new Date(maxTime) : null;
   }, [allTransactions]);
 
@@ -90,11 +85,10 @@ export const ExpenseDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const industryColorMap = useMemo(() => {
     const uniqueIndustries = Array.from(new Set(allTransactions.map((t) => t.industry))).sort();
-    const mapping: Record<string, string> = {};
-    uniqueIndustries.forEach((industry, index) => {
-      mapping[industry] = CHART_COLORS[index % CHART_COLORS.length];
-    });
-    return mapping;
+    return uniqueIndustries.reduce<Record<string, string>>((acc, industry, index) => {
+      acc[industry] = CHART_COLORS[index % CHART_COLORS.length];
+      return acc;
+    }, {});
   }, [allTransactions]);
 
   const value = useMemo(

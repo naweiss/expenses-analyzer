@@ -45,7 +45,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
     return null;
   }
 
-  const getSortIcon = (key: 'date' | 'debitAmount' | 'businessName' | 'industry') => {
+  const getSortIcon = (key: keyof Transaction) => {
     if (sortConfig?.key !== key) {
       return <ArrowUpDown size={14} className={styles.sortIcon} />;
     }

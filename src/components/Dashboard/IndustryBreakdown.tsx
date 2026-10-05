@@ -109,16 +109,23 @@ const IndustryBreakdown: React.FC<IndustryBreakdownProps> = ({ data: industryDat
             formatter={(value: string) => (
               <span
                 style={{
-                  color: selectedIndustries.includes(value)
-                    ? 'var(--color-primary)'
-                    : 'var(--color-text-main)',
+                  color: selectedIndustries.includes(value) ? 'white' : 'var(--color-text-main)',
                   fontWeight: selectedIndustries.includes(value) ? 600 : 400,
                   cursor: 'pointer',
-                  padding: '2px 4px',
+                  padding: '2px 8px',
                   borderRadius: '4px',
                   background: selectedIndustries.includes(value)
-                    ? 'var(--color-primary-soft)'
+                    ? 'var(--color-primary)'
                     : 'transparent',
+                  border: selectedIndustries.includes(value)
+                    ? '1px solid var(--color-primary)'
+                    : '1px solid transparent',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  transition: 'all 0.2s',
+                  boxShadow: selectedIndustries.includes(value)
+                    ? '0 2px 4px rgba(99, 102, 241, 0.2)'
+                    : 'none',
                 }}
               >
                 {translateIndustry(value)}

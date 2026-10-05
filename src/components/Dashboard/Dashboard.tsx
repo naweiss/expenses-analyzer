@@ -1,5 +1,5 @@
-import React, { useMemo, useCallback } from 'react';
-import { format, parse, isValid } from 'date-fns';
+import React, { useCallback } from 'react';
+import { parse, isValid } from 'date-fns';
 import { useLanguage } from '../../context/LanguageContext';
 import { useDashboardUI } from '../../context/UIContext';
 import { useDashboardData } from '../../context/useDashboardData';
@@ -69,28 +69,6 @@ const Dashboard: React.FC = () => {
     ],
   );
 
-  // Unified filtering for both Summary Cards and Detailed Table
-  const activeFilteredTransactions = useMemo(() => {
-    let filtered = filteredTransactions;
-    if (selectedIndustries.length > 0) {
-      filtered = filtered.filter((t) => selectedIndustries.includes(t.industry));
-    }
-    if (selectedTrendPeriod) {
-      filtered = filtered.filter(
-        (t) =>
-          format(t.date, TREND_DATE_FORMATS[timeframeViewType], { locale: dateLocale }) ===
-          selectedTrendPeriod,
-      );
-    }
-    return filtered;
-  }, [
-    filteredTransactions,
-    selectedIndustries,
-    selectedTrendPeriod,
-    timeframeViewType,
-    dateLocale,
-  ]);
-
   const translateIndustry = (industry: string) => {
     if (industry === 'unknown') return translation.unknown;
     if (industry === 'other') return translation.other;
@@ -100,7 +78,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className={styles.dashboard}>
       <ExpenseSummary
-        transactions={activeFilteredTransactions}
+        transactions={filteredTransactions}
         startDate={timeframeStartDate}
         endDate={timeframeEndDate}
       />
@@ -154,7 +132,7 @@ const Dashboard: React.FC = () => {
             )}
           </div>
         </div>
-        <TransactionTable transactions={activeFilteredTransactions} />
+        <TransactionTable transactions={filteredTransactions} />
       </div>
     </div>
   );

@@ -126,7 +126,9 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       )}
 
       <div className={styles.checkboxGroup}>
-        <label className={styles.checkboxContainer}>
+        <label
+          className={`${styles.checkboxContainer} ${editState.applyToAll ? styles.hasHint : ''}`}
+        >
           <div className={styles.checkboxLabelRow}>
             <input
               type="checkbox"

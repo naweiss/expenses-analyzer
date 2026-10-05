@@ -7,18 +7,20 @@ export const CHART_COLORS = [
   '#f43f5e', // Rose 500
   '#8b5cf6', // Violet 500
   '#06b6d4', // Cyan 500
+  '#f97316', // Orange 500
+  '#14b8a6', // Teal 500
   '#ec4899', // Pink 500
   '#3b82f6', // Blue 500
-  '#84cc16', // Lime 500
-  '#ef4444', // Red 500
-  '#0891b2', // Cyan 600
-  '#4f46e5', // Indigo 600
-  '#c026d3', // Fuchsia 600
-  '#ea580c', // Orange 600
-  '#16a34a', // Green 600
-  '#2563eb', // Blue 600
-  '#9333ea', // Purple 600
-  '#db2777', // Pink 600
+  '#2dd4bf', // Teal 400
+  '#fbbf24', // Amber 400
+  '#a78bfa', // Violet 400
+  '#fb7185', // Rose 400
+  '#4ade80', // Emerald 400
+  '#60a5fa', // Blue 400
+  '#34d399', // Emerald 400 alt
+  '#fb923c', // Orange 400
+  '#818cf8', // Indigo 400
+  '#22d3ee', // Cyan 400
 ];
 
 // Semantic color constants (Compile-time)

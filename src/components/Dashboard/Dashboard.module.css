@@ -111,7 +111,6 @@
 
 .chartContainer :global(.recharts-legend-item) {
   cursor: pointer;
-  transition: opacity 0.2s;
   display: inline-flex !important;
   align-items: center;
   gap: var(--spacing-2);
@@ -126,8 +125,13 @@
   margin-inline-start: 0 !important;
 }
 
-.chartContainer :global(.recharts-legend-item:hover) {
-  opacity: 0.7;
+.chartContainer :global(.recharts-legend-item svg) {
+  transition: var(--transition-base);
+}
+
+.chartContainer :global(.recharts-legend-item:hover svg) {
+  opacity: 0.6;
+  transform: scale(1.15);
 }
 
 .chartWithSwitcher {
@@ -202,13 +206,14 @@
 }
 
 .filterBadge {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  padding: var(--spacing-1) var(--spacing-3);
+  background: var(--color-primary);
+  color: var(--color-card);
+  padding: var(--spacing-1) var(--spacing-4);
   border-radius: var(--border-radius-full);
   font-size: var(--font-size-xs);
   font-weight: 600;
   border: var(--border-width) solid var(--color-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .clearFiltersBtn {
