@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { addWeeks, addMonths, addYears, startOfToday } from 'date-fns';
 import { TimeframeType } from '../utils/dataAggregator';
 import { useExpenseData } from './DataContext';
-import { DashboardUIContext } from './UIContext';
+import { DashboardUIContext, ProcessingFile } from './UIContext';
 import { ConfirmModal } from '../components/UI/ConfirmModal';
 
 export const DashboardUIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -12,6 +12,7 @@ export const DashboardUIProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [internalReferenceDate, setInternalReferenceDate] = useState<Date | null>(null);
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   const [selectedTrendPeriod, setSelectedTrendPeriod] = useState<string | null>(null);
+  const [processingFiles, setProcessingFiles] = useState<ProcessingFile[]>([]);
 
   const [confirmState, setConfirmState] = useState<{
     isOpen: boolean;
@@ -77,6 +78,10 @@ export const DashboardUIProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
   }, []);
 
+  const removeProcessingFile = useCallback((id: string) => {
+    setProcessingFiles((prev) => prev.filter((f) => f.id !== id));
+  }, []);
+
   const value = useMemo(
     () => ({
       currentFileIndex,
@@ -99,6 +104,9 @@ export const DashboardUIProvider: React.FC<{ children: React.ReactNode }> = ({ c
       selectedTrendPeriod,
       setSelectedTrendPeriod,
       requestConfirmation,
+      processingFiles,
+      setProcessingFiles,
+      removeProcessingFile,
     }),
     [
       currentFileIndex,
@@ -111,6 +119,8 @@ export const DashboardUIProvider: React.FC<{ children: React.ReactNode }> = ({ c
       toggleIndustry,
       selectedTrendPeriod,
       requestConfirmation,
+      processingFiles,
+      removeProcessingFile,
     ],
   );
 

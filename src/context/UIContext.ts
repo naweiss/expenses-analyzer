@@ -1,6 +1,13 @@
 import { createContext, useContext } from 'react';
 import { TimeframeType } from '../utils/dataAggregator';
 
+export interface ProcessingFile {
+  id: string;
+  name: string;
+  progress: number;
+  error?: string;
+}
+
 export interface DashboardUIContextType {
   currentFileIndex: number;
   setCurrentFileIndex: (index: number) => void;
@@ -16,6 +23,9 @@ export interface DashboardUIContextType {
   selectedTrendPeriod: string | null;
   setSelectedTrendPeriod: (period: string | null) => void;
   requestConfirmation: (message: string) => Promise<boolean>;
+  processingFiles: ProcessingFile[];
+  setProcessingFiles: React.Dispatch<React.SetStateAction<ProcessingFile[]>>;
+  removeProcessingFile: (id: string) => void;
 }
 
 export const DashboardUIContext = createContext<DashboardUIContextType | undefined>(undefined);

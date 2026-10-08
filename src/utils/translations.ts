@@ -39,6 +39,7 @@ const en = {
   exportCSV: 'Export Backup (CSV)',
   yes: 'Yes',
   no: 'No',
+  removeFailedFile: 'Remove failed file',
   applyActiveRules: 'Active categorization and notes rules detected. Apply them to this statement?',
   errorBoundary: {
     title: 'Something went wrong',
@@ -90,6 +91,7 @@ const he: TranslationSchema = {
   exportCSV: 'ייצוא גיבוי (CSV)',
   yes: 'כן',
   no: 'לא',
+  removeFailedFile: 'הסר קובץ שנכשל',
   applyActiveRules: 'נמצאו כללי קטגוריות והערות פעילים במערכת. האם להחיל אותם על העסקאות שהועלו?',
   errorBoundary: {
     title: 'משהו השתבש',

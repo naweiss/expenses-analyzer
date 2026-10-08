@@ -65,6 +65,54 @@
   gap: var(--spacing-2);
   position: relative;
   transition: var(--transition-base);
+  min-block-size: var(--icon-btn-size);
+}
+
+.fileCard.processing {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.fileCard.error {
+  border-color: var(--color-danger-border);
+  background-color: var(--color-danger-soft);
+  cursor: pointer;
+}
+
+.fileCard svg {
+  flex-shrink: 0;
+}
+
+.fileCard.error svg {
+  color: var(--color-danger);
+}
+
+.fileNameRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+}
+
+.fileInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-inline-size: 0;
+}
+
+.progressContainer {
+  block-size: var(--spacing-1);
+  background: var(--color-muted-bg);
+  border-radius: var(--border-radius-full);
+  overflow: hidden;
+}
+
+.progressBar {
+  block-size: 100%;
+  background: var(--color-primary);
+  transition: width 0.3s ease;
 }
 
 .fileCard span {
@@ -73,6 +121,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  min-inline-size: 0;
 }
 
 .removeBtn {
@@ -85,6 +134,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .removeBtn:hover {

@@ -4,7 +4,6 @@
   position: relative;
   display: flex;
   justify-content: center;
-  overflow: hidden;
 }
 
 .navigatorWrapper {
@@ -21,7 +20,8 @@
   align-items: center;
   gap: var(--spacing-4);
   overflow-x: auto;
-  padding: var(--spacing-2) var(--spacing-3);
+  padding: var(--header-height) var(--spacing-3) var(--spacing-2) var(--spacing-3);
+  margin-block-start: calc(-1 * var(--header-height));
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -43,10 +43,13 @@
   position: relative;
 }
 
-.navBoxWrapper:hover {
+.navBoxWrapper:hover,
+.navBoxWrapper:focus-within,
+.navBoxWrapper[data-tooltip-visible='true'] {
   border-color: var(--color-primary);
   transform: translateY(-2px);
   box-shadow: var(--shadow-sm);
+  z-index: 100;
 }
 
 .navBoxWrapper.active {
@@ -69,6 +72,11 @@
   white-space: nowrap;
   max-inline-size: var(--sidebar-width);
   overflow: hidden;
+  flex-shrink: 0;
+  line-height: 1.5;
+}
+
+.navBox svg {
   flex-shrink: 0;
 }
 
@@ -100,6 +108,42 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.fileName {
+  min-inline-size: 0;
+}
+
+.navBoxWrapper.processing {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.navBoxWrapper.error {
+  border-color: var(--color-danger-border);
+  background-color: var(--color-danger-soft);
+}
+
+.navBoxWrapper.error .navBox {
+  color: var(--color-danger);
+  cursor: pointer;
+}
+
+.progressContainer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--spacing-1);
+  background: var(--color-muted-bg);
+  border-radius: 0 0 var(--border-radius-xl) var(--border-radius-xl);
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.3s ease;
 }
 
 .addBox {
@@ -140,6 +184,7 @@
   cursor: pointer;
   opacity: 1;
   transition: var(--transition-base);
+  flex-shrink: 0;
 }
 
 .removeBtn:hover {
