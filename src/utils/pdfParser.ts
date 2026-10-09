@@ -1,17 +1,19 @@
-import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { Transaction } from './csvParser';
-
-export enum SectionType {
-  Domestic = 'domestic',
-  Foreign = 'foreign',
-  Unknown = 'unknown',
-}
 import { parseDateString, sanitizeAmount, normalizeText } from './parserUtils';
-import { mapHeaderToGoal, ColumnGoal } from './parserSchema';
 
-// Set up the worker using Vite's URL feature for bundled deployment
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+// Set up the worker. In a browser/Vite environment, we use the URL.
+// In other environments (like Node.js tests), we skip this or handle it differently.
+const setupWorker = async () => {
+  if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    try {
+      const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
+    } catch (e) {
+      console.warn('Failed to load pdf.worker.min.mjs?url', e);
+    }
+  }
+};
 
 interface PDFTextItem {
   str: string;
@@ -20,11 +22,54 @@ interface PDFTextItem {
   width: number;
 }
 
-interface ColumnMap {
-  goal: ColumnGoal;
-  minX: number;
-  actualMaxX: number;
+interface Column {
+  goal: string;
+  anchorX: number;
 }
+
+interface Boundary {
+  goal: string;
+  minX: number;
+  maxX: number;
+}
+
+/**
+ * Supported header strings for each goal.
+ * Includes logical and visual (reversed) orders.
+ */
+const COLUMN_HEADERS: Record<string, string[]> = {
+  DATE: ['תאריך עסקה', 'עסקה תאריך', 'תאריך'],
+  BUSINESS_NAME: [
+    'שם בית העסק',
+    'העסק בית שם',
+    'שם בית עסק',
+    'עסק בית שם',
+    'שם העסק',
+    'העסק שם',
+    'בית עסק',
+    'עסק בית',
+    'עסק',
+  ],
+  INDUSTRY: ['ענף'],
+  ORIGINAL_AMOUNT: ['סכום עסקה', 'עסקה סכום', 'סכום מקורי', 'מקורי סכום', 'סכום'],
+  CHARGE_AMOUNT: ['סכום החיוב', 'החיוב סכום', 'בש"ח סכום החיוב', 'סכום בש"ח החיוב', 'החיוב'],
+  DETAILS: ['פירוט נוסף', 'נוסף פירוט', 'פירוט'],
+  IGNORE: [
+    'כרטיס בעסקה',
+    'בעסקה כרטיס',
+    'כרטיס',
+    'בעסקה',
+    'סוג',
+    'עיר',
+    'המרה תאריך שער',
+    'תאריך המרה שער',
+    'תאריך המרה ל- ₪',
+    'שער המרה ב- נטו ₪',
+    'סכום ב-$',
+    'סכום עמלה',
+    'עמלה סכום',
+  ],
+};
 
 interface RawTextItem {
   str?: string;
@@ -43,10 +88,20 @@ const isTextItem = (
   );
 };
 
-const clusterItems = (items: PDFTextItem[], gap = 15) => {
+const processHebrewText = (text: string): string => {
+  if (/[\u0590-\u05FF]/.test(text)) {
+    return text.split(/\s+/).reverse().join(' ');
+  }
+  return text;
+};
+
+/**
+ * Clusters text items horizontally.
+ */
+const clusterItems = (items: PDFTextItem[], gap = 12) => {
   if (items.length === 0) return [];
   const sorted = [...items].sort((a, b) => a.x - b.x);
-  const clusters: { str: string; x: number; maxX: number }[] = [];
+  const clusters: { str: string; x: number; maxX: number; width: number }[] = [];
   let cur = {
     str: sorted[0].str,
     x: sorted[0].x,
@@ -59,7 +114,7 @@ const clusterItems = (items: PDFTextItem[], gap = 15) => {
       cur.str += ' ' + it.str;
       cur.maxX = Math.max(cur.maxX, it.x + it.width);
     } else {
-      clusters.push(cur);
+      clusters.push({ ...cur, width: cur.maxX - cur.x });
       cur = {
         str: it.str,
         x: it.x,
@@ -67,185 +122,170 @@ const clusterItems = (items: PDFTextItem[], gap = 15) => {
       };
     }
   }
-  clusters.push(cur);
+  clusters.push({ ...cur, width: cur.maxX - cur.x });
   return clusters;
 };
 
 const sanitizeBusinessName = (text: string): string => {
   if (!text) return '';
-  const sanitized = text
-    .replace(/תש\s*\.\s*נייד/g, '')
-    .replace(/ה\s*\.\s*קבע/g, '')
-    .replace(/\bא\b/g, '')
+  // Remove known RTL artifacts and order indicators
+  const cleaned = text
+    .replace(/\.?\s*תש\s*\.\s*נייד/g, '')
+    .replace(/\.?\s*ה\s*\.\s*קבע/g, '')
+    .replace(/קבע\s*\.\s*ה/g, '')
+    .replace(/נייד\s*\.\s*תש/g, '')
+    .replace(/\bא\b\s+\*/g, '')
+    .replace(/\*\s+\bא\b/g, '')
     .replace(/לא הוצג/g, '');
 
-  return normalizeText(sanitized);
-};
-
-const extractLinesFromPage = (textContent: { items: RawTextItem[] }): PDFTextItem[][] => {
-  const items: PDFTextItem[] = textContent.items.filter(isTextItem).map((item) => ({
-    str: item.str,
-    x: item.transform[4],
-    y: item.transform[5],
-    width: item.width,
-  }));
-
-  const lines: PDFTextItem[][] = [];
-  items.sort((a, b) => b.y - a.y || a.x - b.x);
-  let currentLine: PDFTextItem[] = [];
-  let lastY = -1;
-  for (const item of items) {
-    if (lastY === -1 || Math.abs(item.y - lastY) < 5) {
-      currentLine.push(item);
-    } else {
-      lines.push(currentLine.sort((a, b) => a.x - b.x));
-      currentLine = [item];
-    }
-    lastY = item.y;
-  }
-  if (currentLine.length > 0) lines.push(currentLine.sort((a, b) => a.x - b.x));
-  return lines;
-};
-
-const detectSection = (lineStr: string, currentSection: SectionType): SectionType => {
-  const isForeignHeader = lineStr.includes('רכישות') && lineStr.includes('בחו"ל');
-  const isDomesticHeader =
-    lineStr.includes('עסקות') && (lineStr.includes('בארץ') || lineStr.includes('זוכו'));
-
-  if (isForeignHeader) return SectionType.Foreign;
-  if (isDomesticHeader) return SectionType.Domestic;
-  return currentSection;
-};
-
-const createColumnMap = (headerItems: PDFTextItem[]): ColumnMap[] | null => {
-  const clusters = clusterItems(headerItems, 15);
-  const tempMap: { goal: ColumnGoal; x: number; maxX: number }[] = [];
-
-  for (const cluster of clusters) {
-    const matchedGoal = mapHeaderToGoal(cluster.str);
-    if (matchedGoal) {
-      tempMap.push({ goal: matchedGoal, x: cluster.x, maxX: cluster.maxX });
-    }
-  }
-
-  if (tempMap.length < 3) return null;
-
-  const sortedMap = tempMap.sort((a, b) => a.x - b.x);
-  return sortedMap.map((current, k) => {
-    const prev = sortedMap[k - 1];
-    const next = sortedMap[k + 1];
-    let minX = prev ? (current.x + prev.maxX) / 2 : 0;
-    let actualMaxX = next ? (current.maxX + next.x) / 2 : 2000;
-
-    if (current.goal === 'INDUSTRY' && next?.goal === 'BUSINESS_NAME') {
-      actualMaxX = current.maxX + (next.x - current.maxX) * 0.1;
-    }
-    if (current.goal === 'BUSINESS_NAME' && prev?.goal === 'INDUSTRY') {
-      minX = prev.maxX + (current.x - prev.maxX) * 0.1;
-    }
-
-    return { goal: current.goal, minX, actualMaxX };
-  });
-};
-
-const parseTransactionRow = (
-  line: PDFTextItem[],
-  columnMap: ColumnMap[],
-  currentSection: SectionType,
-): Transaction | null => {
-  const rowData: Record<string, string> = {};
-  for (const col of columnMap) {
-    const colItems = line.filter((it) => {
-      const midX = it.x + it.width / 2;
-      return midX >= col.minX && midX < col.actualMaxX;
-    });
-
-    let text = colItems
-      .map((it) => it.str)
-      .join(' ')
-      .trim();
-    if (/[\u0590-\u05FF]/.test(text)) {
-      text = text.split(' ').reverse().join(' ');
-    }
-    rowData[col.goal] = normalizeText(text);
-  }
-
-  if (!rowData.DATE || !rowData.CHARGE_AMOUNT) return null;
-
-  const charge = sanitizeAmount(rowData.CHARGE_AMOUNT);
-  const original = rowData.ORIGINAL_AMOUNT ? sanitizeAmount(rowData.ORIGINAL_AMOUNT) : charge;
-  const business = sanitizeBusinessName(rowData.BUSINESS_NAME);
-
-  if (charge === 0 || !business || business.includes('מסגרת') || business.includes('קרדיט')) {
-    return null;
-  }
-
-  const industry = currentSection === SectionType.Foreign ? 'חו"ל' : rowData.INDUSTRY || 'other';
-
-  return {
-    id: crypto.randomUUID(),
-    date: parseDateString(rowData.DATE),
-    businessName: business,
-    industry: normalizeText(industry) || 'other',
-    transactionAmount: original,
-    debitAmount: charge,
-    details: normalizeText(rowData.DETAILS) || '',
-  };
+  return normalizeText(cleaned);
 };
 
 export const parsePDF = async (
   file: File,
   onProgress: (p: number) => void,
 ): Promise<Transaction[]> => {
+  await setupWorker();
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const allTransactions: Transaction[] = [];
 
+  let currentSection: 'domestic' | 'foreign' | 'unknown' = 'unknown';
+  let boundaries: Boundary[] | null = null;
+
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     const page = await pdf.getPage(pageNum);
-    // Cast text content items to RawTextItem[] to avoid 'unknown' error
     const textContent = (await page.getTextContent()) as { items: RawTextItem[] };
-    const lines = extractLinesFromPage(textContent);
 
-    let currentSection = SectionType.Unknown;
-    let columnMap: ColumnMap[] | null = null;
+    const items: PDFTextItem[] = textContent.items.filter(isTextItem).map((item) => ({
+      str: item.str,
+      x: item.transform[4],
+      y: item.transform[5],
+      width: item.width,
+    }));
+
+    // Fine-grained line detection (2px tolerance) to separate rows correctly
+    const lines: PDFTextItem[][] = [];
+    items.sort((a, b) => b.y - a.y || a.x - b.x);
+    let currentLine: PDFTextItem[] = [];
+    let lastY = -1;
+    for (const item of items) {
+      if (lastY === -1 || Math.abs(item.y - lastY) < 2) {
+        currentLine.push(item);
+      } else {
+        lines.push(currentLine.sort((a, b) => a.x - b.x));
+        currentLine = [item];
+      }
+      lastY = item.y;
+    }
+    if (currentLine.length > 0) lines.push(currentLine.sort((a, b) => a.x - b.x));
 
     for (let j = 0; j < lines.length; j++) {
       const line = lines[j];
       const lineStr = line.map((it) => it.str).join(' ');
 
-      const newSection = detectSection(lineStr, currentSection);
-      if (newSection !== currentSection) {
-        currentSection = newSection;
-        columnMap = null;
+      // Section Transitions
+      if (lineStr.includes('רכישות') && lineStr.includes('בחו"ל')) {
+        currentSection = 'foreign';
+        boundaries = null;
+        continue;
+      }
+      if (lineStr.includes('עסקות') && (lineStr.includes('בארץ') || lineStr.includes('זוכו'))) {
+        currentSection = 'domestic';
+        boundaries = null;
         continue;
       }
 
-      const isHeaderLine =
-        lineStr.includes('תאריך') ||
-        lineStr.includes('סכום') ||
-        lineStr.includes('ענף') ||
-        lineStr.includes('פירוט');
-
-      if (isHeaderLine) {
-        const headerItems = [...line];
-        if (lines[j + 1]) headerItems.push(...lines[j + 1]);
-        if (lines[j + 2]) headerItems.push(...lines[j + 2]);
-
-        const newMap = createColumnMap(headerItems);
-        if (newMap && (!columnMap || newMap.length > columnMap.length)) {
-          columnMap = newMap;
-          j += 1;
-          continue;
+      // Header Detection (pooling 3 lines)
+      const detectedAnchors: Column[] = [];
+      for (let k = 0; k < 3 && j + k < lines.length; k++) {
+        const clusters = clusterItems(lines[j + k], 5);
+        for (const c of clusters) {
+          const text = normalizeText(processHebrewText(c.str));
+          for (const [goal, headerNames] of Object.entries(COLUMN_HEADERS)) {
+            if (headerNames.includes(text)) {
+              detectedAnchors.push({ goal, anchorX: (c.x + c.maxX) / 2 });
+              break;
+            }
+          }
         }
       }
 
-      if (!columnMap) continue;
+      const uniqueGoals = new Set(detectedAnchors.map((a) => a.goal));
+      if (uniqueGoals.size >= 3) {
+        // Resolve ambiguous 'סכום' headers for domestic section
+        const originalAmounts = detectedAnchors.filter((a) => a.goal === 'ORIGINAL_AMOUNT');
+        if (originalAmounts.length >= 2) {
+          const sorted = originalAmounts.sort((a, b) => a.anchorX - b.anchorX);
+          sorted[0].goal = 'CHARGE_AMOUNT';
+          sorted[1].goal = 'ORIGINAL_AMOUNT';
+        }
 
-      if (/\b\d{2}\/\d{2}\/\d{2}\b/.test(lineStr) && !lineStr.includes('סה"כ')) {
-        const transaction = parseTransactionRow(line, columnMap, currentSection);
-        if (transaction) {
-          allTransactions.push(transaction);
+        const sortedAnchors = detectedAnchors
+          .filter((a, idx, self) => self.findIndex((t) => t.goal === a.goal) === idx) // Unique goals
+          .sort((a, b) => a.anchorX - b.anchorX);
+
+        boundaries = sortedAnchors.map((anchor, idx) => {
+          const prev = sortedAnchors[idx - 1];
+          const next = sortedAnchors[idx + 1];
+          return {
+            goal: anchor.goal,
+            minX: prev ? (anchor.anchorX + prev.anchorX) / 2 : 0,
+            maxX: next ? (anchor.anchorX + next.anchorX) / 2 : 2000,
+          };
+        });
+        continue;
+      }
+
+      if (!boundaries) continue;
+
+      // Transaction Row Extraction
+      const dateMatch = /\b\d{2}\/\d{2}\/\d{2}\b/.exec(lineStr);
+      if (dateMatch && !lineStr.includes('סה"כ')) {
+        const rowData: Record<string, string[]> = {};
+        for (const b of boundaries) rowData[b.goal] = [];
+
+        for (const item of line) {
+          const itemMidX = item.x + item.width / 2;
+          const bound = boundaries.find((b) => itemMidX >= b.minX && itemMidX < b.maxX);
+          if (bound) rowData[bound.goal].push(item.str);
+        }
+
+        const getColText = (goal: string) => {
+          const items = rowData[goal] || [];
+          if (goal === 'DATE') {
+            const joined = items.join('').trim();
+            const m = /\b\d{2}\/\d{2}\/\d{2}\b/.exec(joined);
+            return m ? m[0] : '';
+          }
+          let text = items.join(' ').trim();
+          if (/[\u0590-\u05FF]/.test(text)) {
+            text = text.split(/\s+/).reverse().join(' ');
+          }
+          return normalizeText(text);
+        };
+
+        const charge = sanitizeAmount(getColText('CHARGE_AMOUNT'));
+        const business = getColText('BUSINESS_NAME');
+
+        if (
+          charge !== 0 &&
+          business &&
+          !business.includes('סה"כ') &&
+          !business.includes('מסגרת') &&
+          !business.includes('קרדיט')
+        ) {
+          allTransactions.push({
+            id: crypto.randomUUID(),
+            date: parseDateString(getColText('DATE')),
+            businessName: sanitizeBusinessName(business),
+            industry:
+              normalizeText(currentSection === 'foreign' ? 'חו"ל' : getColText('INDUSTRY')) ||
+              'other',
+            transactionAmount: sanitizeAmount(getColText('ORIGINAL_AMOUNT')) || charge,
+            debitAmount: charge,
+            details: getColText('DETAILS'),
+          });
         }
       }
     }
