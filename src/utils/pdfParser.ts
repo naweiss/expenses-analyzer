@@ -41,6 +41,8 @@ export interface Boundary {
   minX: number;
   maxX: number;
   anchorX?: number;
+  topY?: number;
+  bottomY?: number;
 }
 
 interface RawTextItem {
@@ -393,14 +395,8 @@ export const parsePDF = async (
     throw new Error('Unsupported input type for PDF parsing');
   }
 
-  const cMapUrl = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`;
-  const standardFontDataUrl = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`;
-
   const pdf = await pdfjsLib.getDocument({
     data: uint8Array,
-    cMapUrl,
-    cMapPacked: true,
-    standardFontDataUrl,
   }).promise;
 
   const allTransactions: Transaction[] = [];
