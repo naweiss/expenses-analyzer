@@ -1,18 +1,10 @@
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { Transaction } from './csvParser';
 import { parseDateString, sanitizeAmount, normalizeText } from './parserUtils';
 
-// Configure the worker to use the local bundled version
-export const setupWorker = async () => {
-  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-    try {
-      const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = worker.default;
-    } catch {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-    }
-  }
-};
+// Configure the worker using Vite's URL feature for bundled deployment
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export enum SectionType {
   Domestic = 'domestic',
@@ -413,8 +405,6 @@ export const parsePDF = async (
   file: File | Uint8Array,
   onProgress?: (p: number) => void,
 ): Promise<Transaction[]> => {
-  await setupWorker();
-
   let uint8Array: Uint8Array;
   if (file instanceof Uint8Array) {
     uint8Array = file;

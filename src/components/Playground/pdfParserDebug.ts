@@ -5,7 +5,6 @@ import {
   Boundary,
   PDFTextItem,
   RawTextItem,
-  setupWorker,
   extractLinesFromPage,
   detectSection,
   detectTableBoundaries,
@@ -66,8 +65,6 @@ export const parsePDFWithDebug = async (
   file: File | Uint8Array | ArrayBuffer,
   onProgress?: (p: number) => void,
 ): Promise<PdfDebugResult> => {
-  await setupWorker();
-
   let uint8Array: Uint8Array;
   if (file instanceof Uint8Array) {
     uint8Array = file;
