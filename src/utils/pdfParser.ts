@@ -210,6 +210,14 @@ export const detectSection = (lineStr: string, currentSection: SectionType): Sec
 };
 
 /**
+ * Detects summary / subtotal rows (such as intermediate debit-date subtotals or grand totals)
+ * that should not be parsed into individual transactions.
+ */
+export const isSummaryRow = (lineStr: string): boolean => {
+  return lineStr.includes('סה"כ');
+};
+
+/**
  * Matches a normalized cluster text string against exact canonical headers.
  */
 export const matchHeaderGoal = (text: string, section: SectionType): ColumnGoal | null => {
@@ -439,12 +447,6 @@ export const parsePDF = async (
         continue;
       }
 
-      // Conclude table on summary row
-      if (lineStr.includes('סה"כ')) {
-        boundaries = null;
-        continue;
-      }
-
       // Header Detection
       const headerResult = detectTableBoundaries(lines, j, currentSection);
       if (headerResult) {
@@ -452,6 +454,11 @@ export const parsePDF = async (
         if (headerResult.linesConsumed > 1) {
           j += headerResult.linesConsumed - 1;
         }
+        continue;
+      }
+
+      // Skip summary / subtotal rows from being parsed as transactions
+      if (isSummaryRow(lineStr)) {
         continue;
       }
 

@@ -7,6 +7,7 @@ import {
   RawTextItem,
   extractLinesFromPage,
   detectSection,
+  isSummaryRow,
   detectTableBoundaries,
   parseTransactionRow,
 } from '../../utils/pdfParser';
@@ -127,32 +128,6 @@ export const parsePDFWithDebug = async (
         continue;
       }
 
-      // Conclude table on summary row
-      if (lineStr.includes('סה"כ')) {
-        if (currentTable) {
-          const finalBottomY = lineY - 5;
-          currentTable.bottomY = finalBottomY;
-          for (const b of currentTable.boundaries) {
-            b.bottomY = finalBottomY;
-          }
-        }
-        activeBoundaries = null;
-        currentTable = null;
-        const debugWords: DebugWord[] = line.map((it) => ({
-          ...it,
-          height: it.height ?? 10,
-          rowY: lineY,
-        }));
-        pageWords.push(...debugWords);
-        pageRows.push({
-          y: lineY,
-          lineStr,
-          type: 'other',
-          items: debugWords,
-        });
-        continue;
-      }
-
       // Header Detection
       const headerResult = detectTableBoundaries(lines, j, currentSection);
       if (headerResult) {
@@ -197,6 +172,31 @@ export const parsePDFWithDebug = async (
           });
         }
         j += consumed - 1;
+        continue;
+      }
+
+      // Summary row (subtotal / date total): include in currentTable bounds, but do not parse as transaction
+      if (isSummaryRow(lineStr)) {
+        if (currentTable) {
+          const rowBottom = lineY - 5;
+          currentTable.bottomY =
+            currentTable.bottomY === 0 ? rowBottom : Math.min(currentTable.bottomY, rowBottom);
+          for (const b of currentTable.boundaries) {
+            b.bottomY = currentTable.bottomY;
+          }
+        }
+        const debugWords: DebugWord[] = line.map((it) => ({
+          ...it,
+          height: it.height ?? 10,
+          rowY: lineY,
+        }));
+        pageWords.push(...debugWords);
+        pageRows.push({
+          y: lineY,
+          lineStr,
+          type: 'other',
+          items: debugWords,
+        });
         continue;
       }
 
