@@ -1,18 +1,10 @@
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { Transaction } from './csvParser';
 import { parseDateString, sanitizeAmount, normalizeText } from './parserUtils';
 
-// Configure the worker to use the local bundled version
-export const setupWorker = async () => {
-  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-    try {
-      const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = worker.default;
-    } catch {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-    }
-  }
-};
+// Configure the worker using Vite's URL feature for bundled deployment
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export enum SectionType {
   Domestic = 'domestic',
@@ -218,6 +210,14 @@ export const detectSection = (lineStr: string, currentSection: SectionType): Sec
 };
 
 /**
+ * Detects summary / subtotal rows (such as intermediate debit-date subtotals or grand totals)
+ * that should not be parsed into individual transactions.
+ */
+export const isSummaryRow = (lineStr: string): boolean => {
+  return lineStr.includes('סה"כ');
+};
+
+/**
  * Matches a normalized cluster text string against exact canonical headers.
  */
 export const matchHeaderGoal = (text: string, section: SectionType): ColumnGoal | null => {
@@ -237,7 +237,7 @@ export interface TableBoundaryResult {
 
 /**
  * Detects table headers and constructs column boundary spans.
- * Automatically merges vertically stacked 2-line headers (e.g. 'סכום' + 'החיוב' -> 'סכום החיוב').
+ * Automatically merges vertically stacked multi-line headers (e.g. 'סכום' + 'החיוב' + 'בש"ח' -> 'סכום החיוב בש"ח').
  */
 export const detectTableBoundaries = (
   lines: PDFTextItem[][],
@@ -247,38 +247,60 @@ export const detectTableBoundaries = (
   const lineY = lines[startLineIdx][0]?.y ?? 0;
   const topClusters = clusterItems(lines[startLineIdx], 5);
 
-  // Check if there is an immediately adjacent sub-line (e.g. multi-line header within 15px)
-  const nextLine = lines[startLineIdx + 1];
-  const bottomClusters =
-    nextLine && Math.abs(lineY - nextLine[0].y) <= 15 ? clusterItems(nextLine, 5) : [];
+  // Scan downward for candidate sub-lines belonging to this header block
+  const candidateSubLines: { lineOffset: number; clusters: ReturnType<typeof clusterItems> }[] = [];
+  let lastY = lineY;
+  for (let offset = 1; offset <= 4 && startLineIdx + offset < lines.length; offset++) {
+    const nextLine = lines[startLineIdx + offset];
+    const nextLineY = nextLine[0]?.y ?? 0;
+    const subLineStr = nextLine.map((it) => it.str).join(' ');
 
+    if (Math.abs(lastY - nextLineY) > 15) break;
+    if (/\b\d{2}\/\d{2}\/\d{2}\b/.test(subLineStr)) break;
+    if (subLineStr.includes('סה"כ')) break;
+
+    candidateSubLines.push({
+      lineOffset: offset,
+      clusters: clusterItems(nextLine, 5),
+    });
+    lastY = nextLineY;
+  }
+
+  let maxLineOffsetUsed = 0;
   const detectedAnchors: ColumnAnchor[] = [];
 
   for (const tc of topClusters) {
-    const tcText = normalizeText(processHebrewText(tc.str));
-
-    // Try direct single-line match first
+    let tcText = normalizeText(processHebrewText(tc.str));
     let goal = matchHeaderGoal(tcText, section);
     let minX = tc.x;
     let maxX = tc.maxX;
+    let clusterOffsetUsed = 0;
 
-    // If not matched directly, check if qualifier words exist directly underneath on the bottom line
-    if (!goal && bottomClusters.length > 0) {
-      const matchingBottom = bottomClusters.filter((bc) => {
-        const tcMid = (tc.x + tc.maxX) / 2;
-        const bcMid = (bc.x + bc.maxX) / 2;
-        return Math.abs(tcMid - bcMid) < 15 || (bc.x < tc.maxX && bc.maxX > tc.x);
+    for (const sub of candidateSubLines) {
+      const matchingBottom = sub.clusters.filter((sc) => {
+        const tcMid = (minX + maxX) / 2;
+        const scMid = (sc.x + sc.maxX) / 2;
+        return Math.abs(tcMid - scMid) < 15 || (sc.x < maxX && sc.maxX > minX);
       });
 
       if (matchingBottom.length > 0) {
-        const bcText = matchingBottom
-          .map((bc) => normalizeText(processHebrewText(bc.str)))
+        const scText = matchingBottom
+          .map((sc) => normalizeText(processHebrewText(sc.str)))
           .join(' ');
-        const mergedText = `${tcText} ${bcText}`;
-        goal = matchHeaderGoal(mergedText, section);
-        if (goal) {
-          minX = Math.min(tc.x, ...matchingBottom.map((b) => b.x));
-          maxX = Math.max(tc.maxX, ...matchingBottom.map((b) => b.maxX));
+        const combinedText = `${tcText} ${scText}`;
+        const combinedGoal = matchHeaderGoal(combinedText, section);
+
+        if (combinedGoal) {
+          goal = combinedGoal;
+          tcText = combinedText;
+          minX = Math.min(minX, ...matchingBottom.map((b) => b.x));
+          maxX = Math.max(maxX, ...matchingBottom.map((b) => b.maxX));
+          clusterOffsetUsed = sub.lineOffset;
+        } else if (goal) {
+          // Pure spatial projection: sub-cluster sits physically inside this confirmed column's X corridor
+          minX = Math.min(minX, ...matchingBottom.map((b) => b.x));
+          maxX = Math.max(maxX, ...matchingBottom.map((b) => b.maxX));
+          clusterOffsetUsed = sub.lineOffset;
         }
       }
     }
@@ -290,6 +312,7 @@ export const detectTableBoundaries = (
         minX,
         maxX,
       });
+      maxLineOffsetUsed = Math.max(maxLineOffsetUsed, clusterOffsetUsed);
     }
   }
 
@@ -299,12 +322,7 @@ export const detectTableBoundaries = (
   // Deduplicate by goal and sort by anchorX
   const sortedAnchors = detectedAnchors
     .filter((a, idx, self) => self.findIndex((t) => t.goal === a.goal) === idx)
-    .sort((a, b) => a.anchorX - b.anchorX) as {
-    goal: ColumnGoal;
-    anchorX: number;
-    minX: number;
-    maxX: number;
-  }[];
+    .sort((a, b) => a.anchorX - b.anchorX);
 
   const dividers: number[] = [];
   for (let i = 0; i < sortedAnchors.length - 1; i++) {
@@ -330,7 +348,7 @@ export const detectTableBoundaries = (
     maxX: idx === sortedAnchors.length - 1 ? 2000 : dividers[idx],
   }));
 
-  return { boundaries, linesConsumed: bottomClusters.length > 0 ? 2 : 1 };
+  return { boundaries, linesConsumed: maxLineOffsetUsed + 1 };
 };
 
 /**
@@ -395,8 +413,6 @@ export const parsePDF = async (
   file: File | Uint8Array,
   onProgress?: (p: number) => void,
 ): Promise<Transaction[]> => {
-  await setupWorker();
-
   let uint8Array: Uint8Array;
   if (file instanceof Uint8Array) {
     uint8Array = file;
@@ -431,12 +447,6 @@ export const parsePDF = async (
         continue;
       }
 
-      // Conclude table on summary row
-      if (lineStr.includes('סה"כ')) {
-        boundaries = null;
-        continue;
-      }
-
       // Header Detection
       const headerResult = detectTableBoundaries(lines, j, currentSection);
       if (headerResult) {
@@ -444,6 +454,11 @@ export const parsePDF = async (
         if (headerResult.linesConsumed > 1) {
           j += headerResult.linesConsumed - 1;
         }
+        continue;
+      }
+
+      // Skip summary / subtotal rows from being parsed as transactions
+      if (isSummaryRow(lineStr)) {
         continue;
       }
 
