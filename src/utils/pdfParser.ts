@@ -3,7 +3,7 @@ import { Transaction } from './csvParser';
 import { parseDateString, sanitizeAmount, normalizeText } from './parserUtils';
 
 // Configure the worker to use the local bundled version
-const setupWorker = async () => {
+export const setupWorker = async () => {
   if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
     try {
       const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
@@ -34,6 +34,7 @@ export interface PDFTextItem {
   x: number;
   y: number;
   width: number;
+  height?: number;
 }
 
 export interface Boundary {
@@ -45,10 +46,11 @@ export interface Boundary {
   bottomY?: number;
 }
 
-interface RawTextItem {
+export interface RawTextItem {
   str?: string;
   transform?: number[];
   width?: number;
+  height?: number;
 }
 
 interface ColumnAnchor {
@@ -62,7 +64,7 @@ interface ColumnAnchor {
  * Canonical header mappings for foreign transactions table.
  * Standard logical Hebrew reading order only.
  */
-const FOREIGN_HEADER_MAP: Record<string, ColumnGoal> = {
+export const FOREIGN_HEADER_MAP: Record<string, ColumnGoal> = {
   תאריך: 'DATE',
   'תאריך עסקה': 'DATE',
   סוג: 'IGNORE',
@@ -86,7 +88,7 @@ const FOREIGN_HEADER_MAP: Record<string, ColumnGoal> = {
  * Canonical header mappings for domestic transactions table.
  * Standard logical Hebrew reading order only.
  */
-const DOMESTIC_HEADER_MAP: Record<string, ColumnGoal> = {
+export const DOMESTIC_HEADER_MAP: Record<string, ColumnGoal> = {
   'תאריך עסקה': 'DATE',
   תאריך: 'DATE',
   'כרטיס בעסקה': 'IGNORE',
@@ -104,9 +106,9 @@ const DOMESTIC_HEADER_MAP: Record<string, ColumnGoal> = {
   פירוט: 'DETAILS',
 };
 
-const isTextItem = (
+export const isTextItem = (
   item: RawTextItem,
-): item is { str: string; transform: number[]; width: number } => {
+): item is { str: string; transform: number[]; width: number; height?: number } => {
   return (
     typeof item.str === 'string' &&
     Array.isArray(item.transform) &&
@@ -115,7 +117,7 @@ const isTextItem = (
   );
 };
 
-const processHebrewText = (text: string): string => {
+export const processHebrewText = (text: string): string => {
   if (/[\u0590-\u05FF]/.test(text)) {
     return text.split(/\s+/).reverse().join(' ');
   }
@@ -125,7 +127,7 @@ const processHebrewText = (text: string): string => {
 /**
  * Clusters text items horizontally within a line.
  */
-const clusterItems = (items: PDFTextItem[], gap = 12) => {
+export const clusterItems = (items: PDFTextItem[], gap = 12) => {
   if (items.length === 0) return [];
   const sorted = [...items].sort((a, b) => a.x - b.x);
   const clusters: { str: string; x: number; maxX: number; width: number }[] = [];
@@ -156,7 +158,7 @@ const clusterItems = (items: PDFTextItem[], gap = 12) => {
 /**
  * Sanitizes business name by removing payment scheme indicators and order artifacts.
  */
-const sanitizeBusinessName = (text: string): string => {
+export const sanitizeBusinessName = (text: string): string => {
   if (!text) return '';
   const cleaned = text
     .replace(/\.?\s*תש\s*\.\s*נייד/g, '')
@@ -173,13 +175,17 @@ const sanitizeBusinessName = (text: string): string => {
 /**
  * Extracts raw PDF text items and groups them into lines with a 2px vertical tolerance.
  */
-const extractLinesFromPage = (textContent: { items: RawTextItem[] }): PDFTextItem[][] => {
-  const items: PDFTextItem[] = textContent.items.filter(isTextItem).map((item) => ({
-    str: item.str,
-    x: item.transform[4],
-    y: item.transform[5],
-    width: item.width,
-  }));
+export const extractLinesFromPage = (textContent: { items: RawTextItem[] }): PDFTextItem[][] => {
+  const items: PDFTextItem[] = textContent.items.filter(isTextItem).map((item) => {
+    const height = typeof item.height === 'number' && item.height > 0 ? item.height : 10;
+    return {
+      str: item.str,
+      x: item.transform[4],
+      y: item.transform[5],
+      width: item.width,
+      height,
+    };
+  });
 
   const lines: PDFTextItem[][] = [];
   items.sort((a, b) => b.y - a.y || a.x - b.x);
@@ -201,7 +207,7 @@ const extractLinesFromPage = (textContent: { items: RawTextItem[] }): PDFTextIte
 /**
  * Detects section transitions (foreign purchases vs domestic transactions).
  */
-const detectSection = (lineStr: string, currentSection: SectionType): SectionType => {
+export const detectSection = (lineStr: string, currentSection: SectionType): SectionType => {
   if (lineStr.includes('רכישות') && lineStr.includes('בחו"ל')) {
     return SectionType.Foreign;
   }
@@ -214,7 +220,7 @@ const detectSection = (lineStr: string, currentSection: SectionType): SectionTyp
 /**
  * Matches a normalized cluster text string against exact canonical headers.
  */
-const matchHeaderGoal = (text: string, section: SectionType): ColumnGoal | null => {
+export const matchHeaderGoal = (text: string, section: SectionType): ColumnGoal | null => {
   if (section === SectionType.Foreign) {
     return FOREIGN_HEADER_MAP[text] ?? null;
   }
@@ -224,15 +230,20 @@ const matchHeaderGoal = (text: string, section: SectionType): ColumnGoal | null 
   return FOREIGN_HEADER_MAP[text] ?? DOMESTIC_HEADER_MAP[text] ?? null;
 };
 
+export interface TableBoundaryResult {
+  boundaries: Boundary[];
+  linesConsumed: number;
+}
+
 /**
  * Detects table headers and constructs column boundary spans.
  * Automatically merges vertically stacked 2-line headers (e.g. 'סכום' + 'החיוב' -> 'סכום החיוב').
  */
-const detectTableBoundaries = (
+export const detectTableBoundaries = (
   lines: PDFTextItem[][],
   startLineIdx: number,
   section: SectionType,
-): { boundaries: Boundary[] } | null => {
+): TableBoundaryResult | null => {
   const lineY = lines[startLineIdx][0]?.y ?? 0;
   const topClusters = clusterItems(lines[startLineIdx], 5);
 
@@ -319,13 +330,13 @@ const detectTableBoundaries = (
     maxX: idx === sortedAnchors.length - 1 ? 2000 : dividers[idx],
   }));
 
-  return { boundaries };
+  return { boundaries, linesConsumed: bottomClusters.length > 0 ? 2 : 1 };
 };
 
 /**
  * Parses a single transaction row using the active table boundaries.
  */
-const parseTransactionRow = (
+export const parseTransactionRow = (
   line: PDFTextItem[],
   boundaries: Boundary[],
   section: SectionType,
@@ -430,6 +441,9 @@ export const parsePDF = async (
       const headerResult = detectTableBoundaries(lines, j, currentSection);
       if (headerResult) {
         boundaries = headerResult.boundaries;
+        if (headerResult.linesConsumed > 1) {
+          j += headerResult.linesConsumed - 1;
+        }
         continue;
       }
 
