@@ -11,16 +11,16 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             {
-              test: /node_modules\/react/,
+              test: /node_modules\/(react|react-dom)\//,
               name: 'react',
-            },
-            {
-              test: /node_modules\/react-dom/,
-              name: 'react-dom',
             },
             {
               test: /node_modules\/recharts/,
               name: 'recharts',
+            },
+            {
+              test: /node_modules\/pdfjs-dist/,
+              name: 'pdfjs',
             },
           ],
         },
