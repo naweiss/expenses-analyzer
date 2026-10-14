@@ -105,7 +105,7 @@ const DragDropUpload: React.FC = () => {
                     removeFile(fileObject.id);
                   }}
                   className={styles.removeBtn}
-                  aria-label="Remove file"
+                  aria-label={translation.removeFile}
                 >
                   <X size={14} />
                 </button>

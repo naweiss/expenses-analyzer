@@ -61,7 +61,7 @@ const FileNavigator: React.FC = () => {
                   e.stopPropagation();
                   removeFile(file.id);
                 }}
-                aria-label="Remove file"
+                aria-label={translation.removeFile}
               >
                 <X size={14} />
               </button>
@@ -115,6 +115,8 @@ const FileNavigator: React.FC = () => {
         <button
           className={`${styles.navBox} ${styles.addBox} ${styles.staticBtn}`}
           onClick={openFileDialog}
+          aria-label={translation.addFiles}
+          title={translation.addFiles}
         >
           <Plus size={20} />
         </button>

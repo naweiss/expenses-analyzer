@@ -59,11 +59,19 @@ const TimeframeSelector: React.FC<TimeframeSelectorProps> = ({ start, end }) => 
       </div>
 
       <div className={styles.navigation}>
-        <button type="button" onClick={() => navigateTimeframe(-1)} aria-label="Previous period">
+        <button
+          type="button"
+          onClick={() => navigateTimeframe(-1)}
+          aria-label={translation.prevPeriod}
+        >
           <PrevIcon size={20} />
         </button>
         <span className={styles.dateRange}>{renderDateRange()}</span>
-        <button type="button" onClick={() => navigateTimeframe(1)} aria-label="Next period">
+        <button
+          type="button"
+          onClick={() => navigateTimeframe(1)}
+          aria-label={translation.nextPeriod}
+        >
           <NextIcon size={20} />
         </button>
       </div>

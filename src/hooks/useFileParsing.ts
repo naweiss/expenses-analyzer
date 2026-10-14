@@ -57,7 +57,7 @@ export const useFileParsing = () => {
                 successfulIds.push(processingId);
               }
             } catch (err) {
-              const message = err instanceof Error ? err.message : 'Failed to parse file';
+              const message = err instanceof Error ? err.message : translation.failedToParseFile;
               setProcessingFiles((prev) =>
                 prev.map((f) => (f.id === processingId ? { ...f, error: message } : f)),
               );
@@ -111,6 +111,7 @@ export const useFileParsing = () => {
       categoryRules,
       notesRules,
       translation.applyActiveRules,
+      translation.failedToParseFile,
       requestConfirmation,
       setProcessingFiles,
     ],
