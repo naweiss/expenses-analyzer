@@ -57,10 +57,13 @@
   --max-width-content: 37.5rem;
   --sidebar-width: 15rem;
   --sidebar-width-mobile: 10rem;
-  --icon-btn-size: 3rem;
+  --icon-btn-size: 2.75rem;
   --table-max-height: 18.75rem;
   --chart-height: 25rem;
   --chart-height-mobile: 20rem;
+  --pie-chart-height: 13.75rem;
+  --pie-chart-height-mobile: 11.25rem;
+  --legend-dot-size: 0.875rem;
   --modal-max-width: 25rem;
   --tooltip-max-width: 20rem;
 

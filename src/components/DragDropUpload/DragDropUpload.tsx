@@ -4,6 +4,7 @@ import { Upload, FileText, X, FileWarning } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useExpenseData } from '../../context/DataContext';
 import { useFileParsing } from '../../hooks/useFileParsing';
+import { getFileErrorMessage } from '../../utils/fileErrors';
 import styles from './DragDropUpload.module.css';
 
 const DragDropUpload: React.FC = () => {
@@ -39,60 +40,64 @@ const DragDropUpload: React.FC = () => {
           </h3>
           <div className={styles.filesGrid}>
             {/* Processing / Error Files */}
-            {processingFiles.map((file) => (
-              <div
-                key={file.id}
-                className={`${styles.fileCard} ${file.error ? styles.error : styles.processing}`}
-                data-tooltip={file.error ?? undefined}
-                data-tooltip-visible={activeTooltipId === file.id ? 'true' : undefined}
-                onClick={() => {
-                  if (file.error) {
-                    setActiveTooltipId((prev) => (prev === file.id ? null : file.id));
-                  }
-                }}
-                onBlur={() => setActiveTooltipId(null)}
-                role={file.error ? 'button' : undefined}
-                tabIndex={file.error ? 0 : undefined}
-                onKeyDown={(e) => {
-                  if (file.error && (e.key === 'Enter' || e.key === ' ')) {
-                    e.preventDefault();
-                    setActiveTooltipId((prev) => (prev === file.id ? null : file.id));
-                  }
-                }}
-              >
-                {file.error ? (
-                  <>
-                    <FileWarning size={20} />
-                    <span>{file.name}</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeProcessingFile(file.id);
-                      }}
-                      className={styles.removeBtn}
-                      aria-label={translation.removeFailedFile}
-                    >
-                      <X size={14} />
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <FileText size={20} />
-                    <div className={styles.fileInfo}>
-                      <div className={styles.fileNameRow}>
-                        <span>{file.name}</span>
+            {processingFiles.map((file) => {
+              const errorMessage = getFileErrorMessage(file.error, translation);
+
+              return (
+                <div
+                  key={file.id}
+                  className={`${styles.fileCard} ${file.error ? styles.error : styles.processing}`}
+                  data-tooltip={errorMessage || undefined}
+                  data-tooltip-visible={activeTooltipId === file.id ? 'true' : undefined}
+                  onClick={() => {
+                    if (file.error) {
+                      setActiveTooltipId((prev) => (prev === file.id ? null : file.id));
+                    }
+                  }}
+                  onBlur={() => setActiveTooltipId(null)}
+                  role={file.error ? 'button' : undefined}
+                  tabIndex={file.error ? 0 : undefined}
+                  onKeyDown={(e) => {
+                    if (file.error && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      setActiveTooltipId((prev) => (prev === file.id ? null : file.id));
+                    }
+                  }}
+                >
+                  {file.error ? (
+                    <>
+                      <FileWarning size={20} />
+                      <span>{file.name}</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeProcessingFile(file.id);
+                        }}
+                        className={styles.removeBtn}
+                        aria-label={translation.removeFailedFile}
+                      >
+                        <X size={14} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={20} />
+                      <div className={styles.fileInfo}>
+                        <div className={styles.fileNameRow}>
+                          <span>{file.name}</span>
+                        </div>
+                        <div className={styles.progressContainer}>
+                          <div
+                            className={styles.progressBar}
+                            style={{ width: `${file.progress}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className={styles.progressContainer}>
-                        <div
-                          className={styles.progressBar}
-                          style={{ width: `${file.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
+                    </>
+                  )}
+                </div>
+              );
+            })}
 
             {/* Completed Files */}
             {uploadedFiles.map((fileObject) => (
@@ -105,7 +110,7 @@ const DragDropUpload: React.FC = () => {
                     removeFile(fileObject.id);
                   }}
                   className={styles.removeBtn}
-                  aria-label="Remove file"
+                  aria-label={translation.removeFile}
                 >
                   <X size={14} />
                 </button>

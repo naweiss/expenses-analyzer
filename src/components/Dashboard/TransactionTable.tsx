@@ -125,8 +125,9 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
                 <div className={styles.descContent}>
                   <span>{translateValue(transaction.businessName)}</span>
                   {(transaction.details || transaction.userNotes) && (
-                    <div
-                      className={styles.tooltipWrapper}
+                    <button
+                      type="button"
+                      className={`${styles.rowActionBtn} ${styles.tooltipWrapper}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         const rect = e.currentTarget.getBoundingClientRect();
@@ -165,13 +166,15 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
                         });
                       }}
                       onMouseLeave={() => setHoveredTooltip(null)}
+                      title={translation.transactionDetails}
+                      aria-label={translation.transactionDetails}
                     >
-                      <Info size={14} className={styles.infoIcon} />
-                    </div>
+                      <Info size={13} className={styles.infoIcon} />
+                    </button>
                   )}
-                  <Pencil
-                    size={18}
-                    className={styles.editIcon}
+                  <button
+                    type="button"
+                    className={`${styles.rowActionBtn} ${styles.editIcon}`}
                     onClick={() =>
                       setEditState({
                         transaction,
@@ -180,12 +183,16 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
                         applyToAll: false,
                       })
                     }
+                    title={translation.editNotes}
                     aria-label={translation.editNotes}
-                  />
+                  >
+                    <Pencil size={12} className={styles.editIconSvg} />
+                  </button>
                 </div>
               </td>
               <td className={styles.categoryCell}>
-                <span
+                <button
+                  type="button"
                   className={styles.categoryTag}
                   style={getTagStyle(transaction.industry)}
                   onClick={() =>
@@ -196,9 +203,10 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
                       applyToAll: false,
                     })
                   }
+                  aria-label={`${translation.editCategory}: ${translateValue(transaction.industry)}`}
                 >
                   {translateValue(transaction.industry)}
-                </span>
+                </button>
               </td>
               <td className={styles.amountCell}>
                 {FORMAT_CURRENCY(transaction.debitAmount, currentLanguage)}

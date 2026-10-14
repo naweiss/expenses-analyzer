@@ -1,5 +1,6 @@
 import Papa from 'papaparse';
 import { parseDateString, sanitizeAmount, normalizeText } from './parserUtils';
+import { FileParsingError, FileErrorCode } from './fileErrors';
 
 export interface Transaction {
   id: string;
@@ -37,7 +38,7 @@ export const rowToTransaction = (row: Record<string, string>): Transaction => {
   };
 };
 
-export const validateCSVHeaders = (fields?: string[]): string | null => {
+export const validateCSVHeaders = (fields?: string[]): string[] | null => {
   const missing: string[] = [];
 
   if (!fields?.includes('Date')) {
@@ -51,7 +52,7 @@ export const validateCSVHeaders = (fields?: string[]): string | null => {
   }
 
   if (missing.length > 0) {
-    return `Missing required columns: ${missing.join(', ')}`;
+    return missing;
   }
 
   return null;
@@ -116,7 +117,7 @@ export const parseCSV = (
 ): Promise<ParsedCSVResult> => {
   return new Promise((resolve, reject) => {
     if (file.size === 0) {
-      reject(new Error('File is empty'));
+      reject(new FileParsingError(FileErrorCode.FileEmpty));
       return;
     }
 
@@ -135,11 +136,15 @@ export const parseCSV = (
           chunk: (results, parser) => {
             try {
               if (!hasCheckedHeaders) {
-                const headerError = validateCSVHeaders(results.meta.fields);
-                if (headerError) {
+                const missingHeaders = validateCSVHeaders(results.meta.fields);
+                if (missingHeaders) {
                   isAborted = true;
                   parser.abort();
-                  reject(new Error(headerError));
+                  reject(
+                    new FileParsingError(FileErrorCode.MissingColumns, {
+                      columns: missingHeaders.join(', '),
+                    }),
+                  );
                   return;
                 }
                 hasCheckedHeaders = true;
@@ -162,7 +167,11 @@ export const parseCSV = (
             } catch (error) {
               isAborted = true;
               parser.abort();
-              reject(error instanceof Error ? error : new Error('Failed to process CSV data'));
+              reject(
+                error instanceof FileParsingError
+                  ? error
+                  : new FileParsingError(FileErrorCode.FailedToProcess),
+              );
             }
           },
           complete: () => {
@@ -170,7 +179,7 @@ export const parseCSV = (
             onProgress?.(100);
 
             if (transactionsByFile.size === 0) {
-              reject(new Error('No valid transactions found in file'));
+              reject(new FileParsingError(FileErrorCode.NoValidTransactions));
               return;
             }
 
@@ -188,7 +197,9 @@ export const parseCSV = (
         });
       })
       .catch((err) => {
-        reject(err instanceof Error ? err : new Error('Failed to read file'));
+        reject(
+          err instanceof FileParsingError ? err : new FileParsingError(FileErrorCode.FailedToRead),
+        );
       });
   });
 };

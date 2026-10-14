@@ -2,6 +2,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { Transaction } from './csvParser';
 import { parseDateString, sanitizeAmount, normalizeText } from './parserUtils';
+import { FileParsingError, FileErrorCode } from './fileErrors';
 
 // Configure the worker using Vite's URL feature for bundled deployment
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -419,7 +420,7 @@ export const parsePDF = async (
   } else if (file && typeof file.arrayBuffer === 'function') {
     uint8Array = new Uint8Array(await file.arrayBuffer());
   } else {
-    throw new Error('Unsupported input type for PDF parsing');
+    throw new FileParsingError(FileErrorCode.UnsupportedFormat);
   }
 
   const pdf = await pdfjsLib.getDocument({

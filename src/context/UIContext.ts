@@ -1,11 +1,12 @@
 import { createContext, useContext } from 'react';
 import { TimeframeType } from '../utils/dataAggregator';
+import { FileErrorInfo } from '../utils/fileErrors';
 
 export interface ProcessingFile {
   id: string;
   name: string;
   progress: number;
-  error?: string;
+  error?: FileErrorInfo | string;
 }
 
 export interface DashboardUIContextType {

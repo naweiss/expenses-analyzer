@@ -75,19 +75,22 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             {industries.map((industry) => {
               const isSelected = editState.value === industry && !editState.showCustomInput;
               return (
-                <span
+                <button
+                  type="button"
                   key={industry}
                   className={`${styles.categoryOption} ${isSelected ? styles.selected : ''}`}
                   style={getTagStyle(industry, isSelected)}
                   onClick={() =>
                     setEditState({ ...editState, value: industry, showCustomInput: false })
                   }
+                  aria-pressed={isSelected}
                 >
                   {translateValue(industry)}
-                </span>
+                </button>
               );
             })}
-            <span
+            <button
+              type="button"
               className={`${styles.categoryOption} ${editState.showCustomInput ? styles.selected : ''}`}
               style={
                 editState.showCustomInput
@@ -99,9 +102,10 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                   : {}
               }
               onClick={() => setEditState({ ...editState, showCustomInput: true })}
+              aria-pressed={!!editState.showCustomInput}
             >
               {translation.customCategory}
-            </span>
+            </button>
           </div>
           {editState.showCustomInput && (
             <input

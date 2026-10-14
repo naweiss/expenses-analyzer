@@ -22,14 +22,21 @@
 }
 
 .categoryOption {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
   padding: var(--border-radius-md) var(--spacing-3);
   border-radius: var(--border-radius-full);
   font-size: var(--font-size-xs);
   font-weight: 600;
   cursor: pointer;
   border: var(--border-width-thick) solid transparent;
+  background: transparent;
   transition: all 0.2s;
   white-space: nowrap;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .categoryOption:hover {
@@ -38,7 +45,6 @@
 
 .categoryOption.selected {
   border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
 }
 
 .checkboxContainer {

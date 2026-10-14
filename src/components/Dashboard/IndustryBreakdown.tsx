@@ -1,14 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  Legend,
-  LegendPayload,
-  TooltipValueType,
-} from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, TooltipValueType } from 'recharts';
 import { PieSectorDataItem } from 'recharts/types/polar/Pie';
 import { NameType } from 'recharts/types/component/DefaultTooltipContent';
 import { useLanguage } from '../../context/LanguageContext';
@@ -40,105 +31,98 @@ const IndustryBreakdown: React.FC<IndustryBreakdownProps> = ({ data: industryDat
     return industry;
   };
 
-  const legendPadding = {
-    paddingTop: isMobile ? '10px' : '20px',
-    paddingLeft: isRightToLeft ? '0px' : isMobile ? '10px' : '24px',
-    paddingRight: isRightToLeft ? (isMobile ? '10px' : '24px') : '0px',
-  };
-
   return (
-    <div className={styles.chartContainer}>
-      <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={100}>
-        <PieChart>
-          <Pie
-            data={activeIndustryData}
-            innerRadius={60}
-            outerRadius={80}
-            paddingAngle={5}
-            dataKey="totalAmount"
-            nameKey="industry"
-            onClick={(data: PieSectorDataItem | null) => {
-              const industry = (data?.payload as IndustryTotal | undefined)?.industry;
-              if (industry) {
-                toggleIndustry(industry);
-              }
-            }}
-            cursor="pointer"
-            isAnimationActive={false}
-          >
-            {activeIndustryData.map((entry) => (
-              <Cell
-                key={`cell-${entry.industry}`}
-                fill={industryColorMap[entry.industry] || UI_COLORS.border}
-                stroke={
-                  selectedIndustries.includes(entry.industry) ? UI_COLORS.activeBorder : 'none'
+    <div className={styles.industryBreakdown}>
+      <div className={styles.pieContainer}>
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={100}>
+          <PieChart margin={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Pie
+              data={activeIndustryData}
+              cx="50%"
+              cy="50%"
+              innerRadius={isMobile ? 50 : 60}
+              outerRadius={isMobile ? 70 : 80}
+              paddingAngle={5}
+              dataKey="totalAmount"
+              nameKey="industry"
+              onClick={(data: PieSectorDataItem | null) => {
+                const industry = (data?.payload as IndustryTotal | undefined)?.industry;
+                if (industry) {
+                  toggleIndustry(industry);
                 }
-                strokeWidth={2}
-                opacity={
-                  selectedIndustries.length > 0 && !selectedIndustries.includes(entry.industry)
-                    ? DIMMED_OPACITY
-                    : 1
-                }
-              />
-            ))}
-          </Pie>
-          <Tooltip
-            formatter={(value: TooltipValueType | undefined, name: NameType | undefined) => {
-              if (value === undefined) return [null, null];
-              const val = (Array.isArray(value) ? value[0] : value) as string | number | undefined;
-              const numValue = typeof val === 'number' ? val : Number(val ?? 0);
-              if (numValue === 0) return [null, null];
+              }}
+              cursor="pointer"
+              isAnimationActive={false}
+            >
+              {activeIndustryData.map((entry) => (
+                <Cell
+                  key={`cell-${entry.industry}`}
+                  fill={industryColorMap[entry.industry] || UI_COLORS.border}
+                  stroke={
+                    selectedIndustries.includes(entry.industry) ? UI_COLORS.activeBorder : 'none'
+                  }
+                  strokeWidth={2}
+                  opacity={
+                    selectedIndustries.length > 0 && !selectedIndustries.includes(entry.industry)
+                      ? DIMMED_OPACITY
+                      : 1
+                  }
+                />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(value: TooltipValueType | undefined, name: NameType | undefined) => {
+                if (value === undefined) return [null, null];
+                const val = (Array.isArray(value) ? value[0] : value) as
+                  | string
+                  | number
+                  | undefined;
+                const numValue = typeof val === 'number' ? val : Number(val ?? 0);
+                if (numValue === 0) return [null, null];
 
-              const translatedName = translateIndustry(String(name ?? ''));
+                const translatedName = translateIndustry(String(name ?? ''));
 
-              return [FORMAT_CURRENCY(numValue, currentLanguage), translatedName];
-            }}
-            separator=": "
-            contentStyle={{
-              ...CHART_CONFIG.tooltip,
-              textAlign: isRightToLeft ? 'right' : 'left',
-              direction: isRightToLeft ? 'rtl' : 'ltr',
-            }}
-          />
-          <Legend
-            align={isRightToLeft ? 'right' : 'left'}
-            verticalAlign="bottom"
-            layout="horizontal"
-            iconType="circle"
-            wrapperStyle={legendPadding}
-            formatter={(value: string) => (
+                return [FORMAT_CURRENCY(numValue, currentLanguage), translatedName];
+              }}
+              separator=": "
+              contentStyle={{
+                ...CHART_CONFIG.tooltip,
+                textAlign: isRightToLeft ? 'right' : 'left',
+                direction: isRightToLeft ? 'rtl' : 'ltr',
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div
+        className={styles.industryLegend}
+        role="group"
+        aria-label={translation.industryBreakdown}
+      >
+        {activeIndustryData.map((entry) => {
+          const isSelected = selectedIndustries.includes(entry.industry);
+          const translatedName = translateIndustry(entry.industry);
+
+          return (
+            <button
+              type="button"
+              key={`legend-${entry.industry}`}
+              className={`${styles.legendItem} ${isSelected ? styles.legendItemSelected : ''}`}
+              onClick={() => toggleIndustry(entry.industry)}
+              aria-pressed={isSelected}
+            >
               <span
-                style={{
-                  color: selectedIndustries.includes(value) ? 'white' : 'var(--color-text-main)',
-                  fontWeight: selectedIndustries.includes(value) ? 600 : 400,
-                  cursor: 'pointer',
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  background: selectedIndustries.includes(value)
-                    ? 'var(--color-primary)'
-                    : 'transparent',
-                  border: selectedIndustries.includes(value)
-                    ? '1px solid var(--color-primary)'
-                    : '1px solid transparent',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  transition: 'all 0.2s',
-                  boxShadow: selectedIndustries.includes(value)
-                    ? '0 2px 4px rgba(99, 102, 241, 0.2)'
-                    : 'none',
-                }}
-              >
-                {translateIndustry(value)}
+                className={styles.legendColorDot}
+                style={{ backgroundColor: industryColorMap[entry.industry] || UI_COLORS.border }}
+              />
+              <span className={styles.legendText} title={translatedName}>
+                {translatedName}
               </span>
-            )}
-            onClick={(props: LegendPayload) => {
-              if (props?.value) {
-                toggleIndustry(props.value);
-              }
-            }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };

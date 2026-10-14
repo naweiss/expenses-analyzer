@@ -279,21 +279,24 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
         <button
           className={`${styles.switcherBtn} ${chartType === 'bar' ? styles.active : ''}`}
           onClick={() => setChartType('bar')}
-          data-tooltip="Total Spending"
+          data-tooltip={translation.chartTotalSpending}
+          aria-label={translation.chartTotalSpending}
         >
           <BarChart3 size={16} />
         </button>
         <button
           className={`${styles.switcherBtn} ${chartType === 'stackedBar' ? styles.active : ''}`}
           onClick={() => setChartType('stackedBar')}
-          data-tooltip="Stacked Categories"
+          data-tooltip={translation.chartStackedCategories}
+          aria-label={translation.chartStackedCategories}
         >
           <Layers size={16} />
         </button>
         <button
           className={`${styles.switcherBtn} ${chartType === 'line' ? styles.active : ''}`}
           onClick={() => setChartType('line')}
-          data-tooltip="Category Trends"
+          data-tooltip={translation.chartCategoryTrends}
+          aria-label={translation.chartCategoryTrends}
         >
           <LineIcon size={16} />
         </button>

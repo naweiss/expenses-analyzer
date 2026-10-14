@@ -90,12 +90,13 @@
 
 .descCell {
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .descContent {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
+  gap: var(--spacing-1);
 }
 
 .categoryCell {
@@ -103,14 +104,21 @@
 }
 
 .categoryTag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
   padding: var(--spacing-0-5) var(--spacing-2);
   border-radius: var(--border-radius-full);
   font-size: var(--font-size-xs);
   font-weight: 600;
   border: var(--border-width) solid transparent;
+  background: transparent;
   cursor: pointer;
   transition: var(--transition-base);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
 }
 
 .categoryTag:hover {
@@ -118,24 +126,54 @@
   transform: scale(1.05);
 }
 
-.editIcon {
+.rowActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--border-radius-sm);
   color: var(--color-text-muted);
-  opacity: 0;
   cursor: pointer;
   transition: all 0.2s;
-  padding: var(--spacing-1);
-  border-radius: var(--border-radius-sm);
-  width: var(--icon-size-md);
-  height: var(--icon-size-md);
   flex-shrink: 0;
+  line-height: 1;
 }
 
-.editIcon:hover {
+.rowActionBtn:hover {
   background: var(--color-primary-soft);
   color: var(--color-primary);
+  opacity: 1;
+}
+
+.rowActionBtn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.infoIcon,
+.editIconSvg {
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.tooltipWrapper {
+  position: relative;
+  opacity: 0.6;
+}
+
+.editIcon {
+  opacity: 0;
 }
 
 .descCell:hover .editIcon {
+  opacity: 0.6;
+}
+
+.descCell:hover .editIcon:hover {
   opacity: 1;
 }
 
@@ -146,23 +184,6 @@
   /* Use Inter (main font) with tabular nums for cleaner look than monospace */
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
-}
-
-.tooltipWrapper {
-  display: inline-flex;
-  position: relative;
-  cursor: help;
-}
-
-.infoIcon {
-  color: var(--color-text-muted);
-  opacity: 0.6;
-  transition: all 0.2s;
-}
-
-.tooltipWrapper:hover .infoIcon {
-  color: var(--color-primary);
-  opacity: 1;
 }
 
 .tooltipContent {
@@ -269,9 +290,6 @@
 
   .editIcon {
     opacity: 0.6;
-    width: var(--icon-size-md);
-    height: var(--icon-size-md);
-    padding: var(--spacing-2);
   }
 
   .descCell:hover .editIcon {

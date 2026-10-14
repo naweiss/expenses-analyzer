@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useState } from 'react';
 import { ListRestart, Globe, Sparkles } from 'lucide-react';
 import { LanguageProvider } from './context/LanguageProvider';
 import { useLanguage } from './context/LanguageContext';
+import { translations } from './utils/translations';
 import { ExpenseDataProvider } from './context/DataProvider';
 import { useExpenseData } from './context/DataContext';
 import { DashboardUIProvider } from './context/UIProvider';
@@ -18,6 +19,9 @@ const AppContent: React.FC = () => {
   const { files } = useExpenseData();
   const { resetView } = useDashboardUI();
   const { currentLanguage, setLanguage, translation } = useLanguage();
+  const nextLanguage = currentLanguage === 'en' ? 'he' : 'en';
+  const targetLanguageName = translations[nextLanguage].languageName;
+
   const [isPlayground, setIsPlayground] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return (
@@ -44,7 +48,7 @@ const AppContent: React.FC = () => {
   if (isPlayground) {
     return (
       <ErrorBoundary>
-        <Suspense fallback={<div className={styles.loading}>Loading Playground...</div>}>
+        <Suspense fallback={<div className={styles.loading}>{translation.loadingPlayground}</div>}>
           <PdfPlayground
             onBack={() => {
               setIsPlayground(false);
@@ -68,15 +72,16 @@ const AppContent: React.FC = () => {
           <button
             type="button"
             className={styles.langToggle}
-            onClick={() => setLanguage(currentLanguage === 'en' ? 'he' : 'en')}
+            onClick={() => setLanguage(nextLanguage)}
+            aria-label={targetLanguageName}
           >
             <Globe size={18} />
-            <span>{currentLanguage === 'en' ? 'עברית' : 'English'}</span>
+            <span>{targetLanguageName}</span>
           </button>
           {isPlaygroundAvailable && (
             <button type="button" className={styles.playgroundToggle} onClick={togglePlayground}>
               <Sparkles size={16} />
-              <span>PDF Playground</span>
+              <span>{translation.pdfPlayground}</span>
             </button>
           )}
         </div>
@@ -100,7 +105,9 @@ const AppContent: React.FC = () => {
             <>
               <FileNavigator />
               <div className={styles.dashboardWrapper}>
-                <Suspense fallback={<div className={styles.loading}>Loading Dashboard...</div>}>
+                <Suspense
+                  fallback={<div className={styles.loading}>{translation.loadingDashboard}</div>}
+                >
                   <Dashboard />
                 </Suspense>
               </div>

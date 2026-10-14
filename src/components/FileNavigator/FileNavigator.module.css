@@ -18,12 +18,14 @@
 .scrollArea {
   display: flex;
   align-items: center;
-  gap: var(--spacing-4);
+  gap: var(--spacing-3);
   overflow-x: auto;
-  padding: var(--header-height) var(--spacing-3) var(--spacing-2) var(--spacing-3);
-  margin-block-start: calc(-1 * var(--header-height));
+  padding-block: var(--header-height) var(--spacing-2);
+  padding-inline: var(--spacing-3);
+  margin-block: calc(-1 * var(--header-height)) calc(-1 * var(--spacing-2));
   scrollbar-width: none;
   -ms-overflow-style: none;
+  min-inline-size: 0;
 }
 
 .scrollArea::-webkit-scrollbar {
@@ -34,6 +36,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
+  height: var(--icon-btn-size);
   background: var(--color-card);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--border-radius-xl);
@@ -61,11 +64,13 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
-  padding-block: var(--spacing-3);
+  height: 100%;
+  padding-block: 0;
   padding-inline: var(--spacing-3) var(--spacing-1);
   background: transparent;
   border: none;
   color: var(--color-text-main);
+  font-family: inherit;
   font-size: var(--font-size-sm);
   font-weight: 500;
   cursor: pointer;
@@ -81,12 +86,18 @@
 }
 
 .staticBtn {
+  height: var(--icon-btn-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
   background: var(--color-card);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--border-radius-xl);
-  padding: var(--spacing-3) var(--spacing-5);
+  padding-block: 0;
+  padding-inline: var(--spacing-5);
+  max-inline-size: none;
 }
 
 .staticBtn:hover {
@@ -150,7 +161,7 @@
   border-style: dashed;
   background: transparent;
   color: var(--color-primary);
-  padding: var(--spacing-3);
+  padding: 0;
   width: var(--icon-btn-size);
   height: var(--icon-btn-size);
   justify-content: center;
@@ -164,7 +175,12 @@
   color: var(--color-primary);
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
+  justify-content: center;
+  gap: var(--spacing-3);
+  height: var(--icon-btn-size);
+  padding-block: 0;
+  padding-inline: var(--spacing-5);
+  max-inline-size: none;
 }
 
 .exportBox:hover {
@@ -217,24 +233,38 @@
     gap: var(--spacing-2);
   }
 
+  .scrollArea {
+    gap: var(--spacing-2);
+  }
+
+  .navBoxWrapper {
+    height: var(--spacing-10);
+    padding-inline-end: var(--spacing-1);
+  }
+
   .navBox {
-    padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-3);
+    padding-block: 0;
+    padding-inline: var(--spacing-2) var(--spacing-1);
     font-size: var(--font-size-xs);
     max-inline-size: var(--sidebar-width-mobile);
   }
 
   .staticBtn {
-    padding: var(--spacing-2) var(--spacing-3);
+    height: var(--spacing-10);
+    padding-block: 0;
+    padding-inline: var(--spacing-3);
   }
 
   .btnText {
     display: none;
   }
 
-  .addBox {
+  .addBox,
+  .exportBox {
     width: var(--spacing-10);
     height: var(--spacing-10);
     padding: 0;
+    justify-content: center;
   }
 
   .removeBtn {

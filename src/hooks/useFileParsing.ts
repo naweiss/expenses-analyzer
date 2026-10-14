@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useDashboardUI, ProcessingFile } from '../context/UIContext';
 import { parseCSV, CSVFile } from '../utils/csvParser';
 import { parsePDF } from '../utils/pdfParser';
+import { FileParsingError, FileErrorCode, FileErrorInfo } from '../utils/fileErrors';
 
 export type { ProcessingFile };
 
@@ -43,6 +44,9 @@ export const useFileParsing = () => {
                 const transactions = await parsePDF(file, (pct) =>
                   updateProgress(processingId, pct),
                 );
+                if (transactions.length === 0) {
+                  throw new FileParsingError(FileErrorCode.NoValidTransactions);
+                }
                 allParsedFiles.push({
                   id: crypto.randomUUID(),
                   name: file.name,
@@ -57,9 +61,22 @@ export const useFileParsing = () => {
                 successfulIds.push(processingId);
               }
             } catch (err) {
-              const message = err instanceof Error ? err.message : 'Failed to parse file';
+              let errorInfo: FileErrorInfo;
+              if (err instanceof FileParsingError) {
+                errorInfo = { code: err.code, params: err.params };
+              } else if (err instanceof Error) {
+                if (err.name === 'PasswordException') {
+                  errorInfo = { code: FileErrorCode.PasswordProtected };
+                } else if (err.name === 'InvalidPDFException') {
+                  errorInfo = { code: FileErrorCode.UnsupportedFormat };
+                } else {
+                  errorInfo = { code: FileErrorCode.UnknownError };
+                }
+              } else {
+                errorInfo = { code: FileErrorCode.UnknownError };
+              }
               setProcessingFiles((prev) =>
-                prev.map((f) => (f.id === processingId ? { ...f, error: message } : f)),
+                prev.map((f) => (f.id === processingId ? { ...f, error: errorInfo } : f)),
               );
             }
           }),

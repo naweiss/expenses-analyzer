@@ -6,6 +6,7 @@ import { useExpenseData } from '../../context/DataContext';
 import { useDashboardUI } from '../../context/UIContext';
 import { useFileParsing } from '../../hooks/useFileParsing';
 import { exportToCSV } from '../../utils/csvExporter';
+import { getFileErrorMessage } from '../../utils/fileErrors';
 import styles from './FileNavigator.module.css';
 
 const FileNavigator: React.FC = () => {
@@ -61,75 +62,79 @@ const FileNavigator: React.FC = () => {
                   e.stopPropagation();
                   removeFile(file.id);
                 }}
-                aria-label="Remove file"
+                aria-label={translation.removeFile}
               >
                 <X size={14} />
               </button>
             </div>
           ))}
 
-          {processingFiles.map((file) => (
-            <div
-              key={file.id}
-              className={`${styles.navBoxWrapper} ${file.error ? styles.error : styles.processing}`}
-              data-tooltip={file.error ?? undefined}
-              data-tooltip-visible={activeTooltipId === file.id ? 'true' : undefined}
-              tabIndex={file.error ? 0 : undefined}
-              role={file.error ? 'button' : undefined}
-              onClick={() => {
-                if (file.error) {
-                  setActiveTooltipId((prev) => (prev === file.id ? null : file.id));
-                }
-              }}
-              onBlur={() => setActiveTooltipId(null)}
-              onKeyDown={(e) => {
-                if (file.error && (e.key === 'Enter' || e.key === ' ')) {
-                  e.preventDefault();
-                  setActiveTooltipId((prev) => (prev === file.id ? null : file.id));
-                }
-              }}
-            >
-              <div className={styles.navBox}>
-                {file.error ? <FileWarning size={18} /> : <FileText size={18} />}
-                <span className={styles.fileName}>{file.name}</span>
-                {!file.error && (
-                  <div className={styles.progressContainer}>
-                    <div className={styles.progressBar} style={{ width: `${file.progress}%` }} />
-                  </div>
-                )}
-              </div>
-              <button
-                className={styles.removeBtn}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeProcessingFile(file.id);
+          {processingFiles.map((file) => {
+            const errorMessage = getFileErrorMessage(file.error, translation);
+
+            return (
+              <div
+                key={file.id}
+                className={`${styles.navBoxWrapper} ${file.error ? styles.error : styles.processing}`}
+                data-tooltip={errorMessage || undefined}
+                data-tooltip-visible={activeTooltipId === file.id ? 'true' : undefined}
+                tabIndex={file.error ? 0 : undefined}
+                role={file.error ? 'button' : undefined}
+                onClick={() => {
+                  if (file.error) {
+                    setActiveTooltipId((prev) => (prev === file.id ? null : file.id));
+                  }
                 }}
-                aria-label={translation.removeFailedFile}
+                onBlur={() => setActiveTooltipId(null)}
+                onKeyDown={(e) => {
+                  if (file.error && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    setActiveTooltipId((prev) => (prev === file.id ? null : file.id));
+                  }
+                }}
               >
-                <X size={14} />
-              </button>
-            </div>
-          ))}
+                <div className={styles.navBox}>
+                  {file.error ? <FileWarning size={18} /> : <FileText size={18} />}
+                  <span className={styles.fileName}>{file.name}</span>
+                  {!file.error && (
+                    <div className={styles.progressContainer}>
+                      <div className={styles.progressBar} style={{ width: `${file.progress}%` }} />
+                    </div>
+                  )}
+                </div>
+                <button
+                  className={styles.removeBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeProcessingFile(file.id);
+                  }}
+                  aria-label={translation.removeFailedFile}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         <button
           className={`${styles.navBox} ${styles.addBox} ${styles.staticBtn}`}
           onClick={openFileDialog}
+          aria-label={translation.addFiles}
+          title={translation.addFiles}
         >
           <Plus size={20} />
         </button>
 
-        {files.length > 0 && (
-          <button
-            className={`${styles.navBox} ${styles.exportBox} ${styles.staticBtn}`}
-            onClick={() => exportToCSV(files, categoryRules, notesRules)}
-            data-tooltip={translation.exportCSV}
-            aria-label={translation.exportCSV}
-          >
-            <Download size={18} />
-            <span className={styles.btnText}>{translation.exportCSV}</span>
-          </button>
-        )}
+        <button
+          className={`${styles.navBox} ${styles.exportBox} ${styles.staticBtn}`}
+          onClick={() => exportToCSV(files, categoryRules, notesRules)}
+          data-tooltip={translation.exportCSV}
+          aria-label={translation.exportCSV}
+        >
+          <Download size={18} />
+          <span className={styles.btnText}>{translation.exportCSV}</span>
+        </button>
       </div>
 
       {isDragActive && (
