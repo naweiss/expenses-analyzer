@@ -110,11 +110,46 @@ export const isTextItem = (
   );
 };
 
+const isHebrewToken = (token: string): boolean => /[\u0590-\u05FF]/.test(token);
+const isLatinToken = (token: string): boolean => /[a-zA-Z]/.test(token);
+
 export const processHebrewText = (text: string): string => {
-  if (/[\u0590-\u05FF]/.test(text)) {
-    return text.split(/\s+/).reverse().join(' ');
+  if (!isHebrewToken(text)) {
+    return text;
   }
-  return text;
+
+  const tokens = text.trim().split(/\s+/);
+  if (tokens.length <= 1) return text;
+
+  interface Chunk {
+    isLatin: boolean;
+    tokens: string[];
+  }
+  const chunks: Chunk[] = [];
+  let current: Chunk | null = null;
+
+  for (const token of tokens) {
+    const latin = isLatinToken(token);
+    if (!current) {
+      current = { isLatin: latin, tokens: [token] };
+      chunks.push(current);
+    } else if (current.isLatin !== latin) {
+      current = { isLatin: latin, tokens: [token] };
+      chunks.push(current);
+    } else {
+      current.tokens.push(token);
+    }
+  }
+
+  const processed = chunks.map((c) => {
+    if (c.isLatin) {
+      return c.tokens.join(' ');
+    } else {
+      return [...c.tokens].reverse().join(' ');
+    }
+  });
+
+  return processed.reverse().join(' ');
 };
 
 /**
@@ -149,19 +184,11 @@ export const clusterItems = (items: PDFTextItem[], gap = 12) => {
 };
 
 /**
- * Sanitizes business name by removing payment scheme indicators and order artifacts.
+ * Sanitizes business name by removing standalone single א indicators.
  */
 export const sanitizeBusinessName = (text: string): string => {
   if (!text) return '';
-  const cleaned = text
-    .replace(/\.?\s*תש\s*\.\s*נייד/g, '')
-    .replace(/\.?\s*ה\s*\.\s*קבע/g, '')
-    .replace(/קבע\s*\.\s*ה/g, '')
-    .replace(/נייד\s*\.\s*תש/g, '')
-    .replace(/(^|\s)א\s*\*/g, '$1*')
-    .replace(/\*\s*א(\s|$)/g, '*$1')
-    .replace(/לא הוצג/g, '');
-
+  const cleaned = text.replace(/(?<=^|[\s*])א(?=[\s*]|$)\s*/g, '');
   return normalizeText(cleaned);
 };
 
@@ -377,10 +404,10 @@ export const parseTransactionRow = (
       return m ? m[0] : '';
     }
     let text = items.join(' ').trim();
-    if (/[\u0590-\u05FF]/.test(text)) {
-      text = text.split(/\s+/).reverse().join(' ');
+    if (goal === 'BUSINESS_NAME') {
+      text = sanitizeBusinessName(text);
     }
-    return normalizeText(text);
+    return normalizeText(processHebrewText(text));
   };
 
   const charge = sanitizeAmount(getColText('CHARGE_AMOUNT'));
