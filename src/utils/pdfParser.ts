@@ -412,6 +412,8 @@ export const parseTransactionRow = (
 
   const charge = sanitizeAmount(getColText('CHARGE_AMOUNT'));
   const business = getColText('BUSINESS_NAME');
+  const rawOriginal = normalizeText(getColText('ORIGINAL_AMOUNT'));
+  const originalAmount = section === SectionType.Foreign && rawOriginal ? rawOriginal : undefined;
 
   if (
     charge !== 0 &&
@@ -426,7 +428,7 @@ export const parseTransactionRow = (
       businessName: sanitizeBusinessName(business),
       industry:
         normalizeText(section === SectionType.Foreign ? 'חו"ל' : getColText('INDUSTRY')) || 'other',
-      transactionAmount: sanitizeAmount(getColText('ORIGINAL_AMOUNT')) || charge,
+      originalAmount,
       debitAmount: charge,
       details: getColText('DETAILS'),
     };

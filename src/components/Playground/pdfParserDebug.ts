@@ -28,7 +28,7 @@ export interface DebugRow {
     date: string;
     businessName: string;
     industry: string;
-    transactionAmount: number;
+    originalAmount?: string;
     debitAmount: number;
     details: string;
   };
@@ -267,7 +267,7 @@ export const parsePDFWithDebug = async (
               date: tx.date ? tx.date.toLocaleDateString('en-GB') : '',
               businessName: tx.businessName,
               industry: tx.industry,
-              transactionAmount: tx.transactionAmount,
+              originalAmount: tx.originalAmount,
               debitAmount: tx.debitAmount,
               details: tx.details,
             },

@@ -61,7 +61,7 @@ export const CHART_CONFIG = {
 
 export const FORMAT_CURRENCY = (value: number, language: Language) => {
   const absValue = Math.abs(value);
-  const symbol = language === 'he' ? '₪' : '$';
+  const symbol = '₪';
   const formattedValue = absValue.toLocaleString(language === 'he' ? 'he-IL' : 'en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

@@ -181,10 +181,11 @@ const PdfPlayground: React.FC<PdfPlaygroundProps> = ({ onBack }) => {
   // CSV output string
   const generatedCsvString = useMemo(() => {
     if (!debugResult) return '';
-    const headers = 'Date,Business Name,Industry,Transaction Amount,Debit Amount,Details';
+    const headers = 'Date,Business Name,Industry,Original Amount,Debit Amount,Details';
     const rows = debugResult.transactions.map((t) => {
       const d = formatDateStr(t.date);
-      return `${d},"${t.businessName}","${t.industry}",${t.transactionAmount},${t.debitAmount},"${t.details}"`;
+      const origAmt = t.originalAmount ? `"${t.originalAmount}"` : '""';
+      return `${d},"${t.businessName}","${t.industry}",${origAmt},${t.debitAmount},"${t.details}"`;
     });
     return [headers, ...rows].join('\n');
   }, [debugResult]);
@@ -756,7 +757,7 @@ const PdfPlayground: React.FC<PdfPlaygroundProps> = ({ onBack }) => {
                             <td>{formatDateStr(tx.date)}</td>
                             <td>{tx.businessName}</td>
                             <td>{tx.industry}</td>
-                            <td>{tx.transactionAmount}</td>
+                            <td>{tx.originalAmount ?? '-'}</td>
                             <td>{tx.debitAmount}</td>
                             <td>{tx.details}</td>
                           </tr>

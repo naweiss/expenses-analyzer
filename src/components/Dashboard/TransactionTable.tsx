@@ -124,14 +124,17 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
               <td className={styles.descCell}>
                 <div className={styles.descContent}>
                   <span>{translateValue(transaction.businessName)}</span>
-                  {(transaction.details || transaction.userNotes) && (
+                  {(Boolean(transaction.details) || Boolean(transaction.userNotes)) && (
                     <button
                       type="button"
                       className={`${styles.rowActionBtn} ${styles.tooltipWrapper}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         const rect = e.currentTarget.getBoundingClientRect();
-                        if (hoveredTooltip?.rect.top === rect.top) {
+                        if (
+                          hoveredTooltip?.rect.top === rect.top &&
+                          hoveredTooltip?.rect.left === rect.left
+                        ) {
                           setHoveredTooltip(null);
                         } else {
                           setHoveredTooltip({
@@ -209,7 +212,64 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
                 </button>
               </td>
               <td className={styles.amountCell}>
-                {FORMAT_CURRENCY(transaction.debitAmount, currentLanguage)}
+                {transaction.originalAmount ? (
+                  <span
+                    className={styles.hasOriginalAmount}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`${translation.originalAmount}: ${transaction.originalAmount}`}
+                    onMouseEnter={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setHoveredTooltip({
+                        rect,
+                        content: (
+                          <div className={styles.originalAmountTooltip}>
+                            <strong>{translation.originalAmount}:</strong>{' '}
+                            {transaction.originalAmount}
+                          </div>
+                        ),
+                      });
+                    }}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                    onFocus={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setHoveredTooltip({
+                        rect,
+                        content: (
+                          <div className={styles.originalAmountTooltip}>
+                            <strong>{translation.originalAmount}:</strong>{' '}
+                            {transaction.originalAmount}
+                          </div>
+                        ),
+                      });
+                    }}
+                    onBlur={() => setHoveredTooltip(null)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      if (
+                        hoveredTooltip?.rect.top === rect.top &&
+                        hoveredTooltip?.rect.left === rect.left
+                      ) {
+                        setHoveredTooltip(null);
+                      } else {
+                        setHoveredTooltip({
+                          rect,
+                          content: (
+                            <div className={styles.originalAmountTooltip}>
+                              <strong>{translation.originalAmount}:</strong>{' '}
+                              {transaction.originalAmount}
+                            </div>
+                          ),
+                        });
+                      }
+                    }}
+                  >
+                    {FORMAT_CURRENCY(transaction.debitAmount, currentLanguage)}
+                  </span>
+                ) : (
+                  FORMAT_CURRENCY(transaction.debitAmount, currentLanguage)
+                )}
               </td>
             </tr>
           ))}

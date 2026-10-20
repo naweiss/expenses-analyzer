@@ -7,7 +7,7 @@ export interface Transaction {
   date: Date;
   businessName: string;
   industry: string;
-  transactionAmount: number;
+  originalAmount?: string;
   debitAmount: number;
   details: string;
   userNotes?: string;
@@ -26,13 +26,18 @@ export interface ParsedCSVResult {
 }
 
 export const rowToTransaction = (row: Record<string, string>): Transaction => {
+  const industry = normalizeText(row.Category ?? '') || 'other';
+  const rawOriginal = normalizeText(row['Original Amount'] ?? row['Transaction Amount'] ?? '');
+  const originalAmount = industry === 'חו"ל' && rawOriginal ? rawOriginal : undefined;
+  const debitAmount = sanitizeAmount(row['Debit Amount'] ?? '');
+
   return {
     id: crypto.randomUUID(),
     date: parseDateString(row.Date ?? ''),
     businessName: normalizeText(row['Business Name'] ?? '') || 'unknown',
-    industry: normalizeText(row.Category ?? '') || 'other',
-    transactionAmount: sanitizeAmount(row['Transaction Amount'] ?? ''),
-    debitAmount: sanitizeAmount(row['Debit Amount'] ?? ''),
+    industry,
+    originalAmount,
+    debitAmount,
     details: normalizeText(row.Details ?? '') || '',
     userNotes: normalizeText(row.Notes ?? '') || undefined,
   };
@@ -47,7 +52,7 @@ export const validateCSVHeaders = (fields?: string[]): string[] | null => {
   if (!fields?.includes('Business Name')) {
     missing.push('Business Name');
   }
-  if (!fields?.includes('Debit Amount') && !fields?.includes('Transaction Amount')) {
+  if (!fields?.includes('Debit Amount')) {
     missing.push('Debit Amount');
   }
 

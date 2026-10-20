@@ -23,7 +23,7 @@ export const exportToCSV = (
       Date: format(t.date, 'dd/MM/yyyy'),
       'Business Name': t.businessName,
       Category: t.industry,
-      'Transaction Amount': t.transactionAmount,
+      'Original Amount': t.originalAmount ?? '',
       'Debit Amount': t.debitAmount,
       Details: t.details,
       Notes: t.userNotes ?? '',
