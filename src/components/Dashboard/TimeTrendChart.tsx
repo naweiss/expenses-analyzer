@@ -69,6 +69,10 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
     );
   }, [industryColorMap, trendData]);
 
+  const hasTrendData = useMemo(() => {
+    return trendData.some((point) => point.totalAmount > 0);
+  }, [trendData]);
+
   const activeColor =
     selectedIndustries.length === 1
       ? (industryColorMap[selectedIndustries[0]] ?? PRIMARY_COLOR)
@@ -305,6 +309,11 @@ const TimeTrendChart: React.FC<TimeTrendChartProps> = ({
         <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={100}>
           {renderChart()}
         </ResponsiveContainer>
+        {!hasTrendData && (
+          <div className={styles.emptyChartOverlay}>
+            <span>{translation.noSpendingTrend}</span>
+          </div>
+        )}
       </div>
     </div>
   );

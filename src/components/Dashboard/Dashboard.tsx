@@ -34,6 +34,8 @@ const Dashboard: React.FC = () => {
     timeTrendData,
   } = useDashboardData();
 
+  const isFiltered = selectedIndustries.length > 0 || Boolean(selectedTrendPeriod);
+
   const handleChartClick = useCallback(
     (label: string | null) => {
       if (!label) {
@@ -132,7 +134,7 @@ const Dashboard: React.FC = () => {
             )}
           </div>
         </div>
-        <TransactionTable transactions={filteredTransactions} />
+        <TransactionTable transactions={filteredTransactions} isFiltered={isFiltered} />
       </div>
     </div>
   );

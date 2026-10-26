@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { format } from 'date-fns';
-import { Info, ArrowUpDown, ArrowUp, ArrowDown, Pencil } from 'lucide-react';
+import { Info, ArrowUpDown, ArrowUp, ArrowDown, Pencil, ReceiptText } from 'lucide-react';
 import { Transaction } from '../../utils/csvParser';
 import { useLanguage } from '../../context/LanguageContext';
 import { useExpenseData } from '../../context/DataContext';
@@ -13,9 +13,13 @@ import styles from './TransactionTable.module.css';
 
 interface TransactionTableProps {
   transactions: Transaction[];
+  isFiltered?: boolean;
 }
 
-const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => {
+const TransactionTable: React.FC<TransactionTableProps> = ({
+  transactions,
+  isFiltered = false,
+}) => {
   const { translation, currentLanguage } = useLanguage();
   const { industryColorMap } = useExpenseData();
 
@@ -40,10 +44,6 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
   }, []);
 
   const industries = useMemo(() => Object.keys(industryColorMap), [industryColorMap]);
-
-  if (transactions.length === 0) {
-    return null;
-  }
 
   const getSortIcon = (key: keyof Transaction) => {
     if (sortConfig?.key !== key) {
@@ -116,27 +116,58 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
           </tr>
         </thead>
         <tbody>
-          {sortedTransactions.map((transaction) => (
-            <tr key={transaction.id}>
-              <td className={styles.dateCell}>
-                {format(transaction.date, 'dd/MM/yyyy', { locale: dateLocale })}
+          {sortedTransactions.length === 0 ? (
+            <tr>
+              <td colSpan={4} className={styles.emptyCell}>
+                <div className={styles.emptyRowContent}>
+                  <ReceiptText size={18} className={styles.emptyIcon} />
+                  <span>
+                    {isFiltered
+                      ? translation.noTransactionsMatchingFilters
+                      : translation.noTransactionsInPeriod}
+                  </span>
+                </div>
               </td>
-              <td className={styles.descCell}>
-                <div className={styles.descContent}>
-                  <span>{translateValue(transaction.businessName)}</span>
-                  {(Boolean(transaction.details) || Boolean(transaction.userNotes)) && (
-                    <button
-                      type="button"
-                      className={`${styles.rowActionBtn} ${styles.tooltipWrapper}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        if (
-                          hoveredTooltip?.rect.top === rect.top &&
-                          hoveredTooltip?.rect.left === rect.left
-                        ) {
-                          setHoveredTooltip(null);
-                        } else {
+            </tr>
+          ) : (
+            sortedTransactions.map((transaction) => (
+              <tr key={transaction.id}>
+                <td className={styles.dateCell}>
+                  {format(transaction.date, 'dd/MM/yyyy', { locale: dateLocale })}
+                </td>
+                <td className={styles.descCell}>
+                  <div className={styles.descContent}>
+                    <span>{translateValue(transaction.businessName)}</span>
+                    {(Boolean(transaction.details) || Boolean(transaction.userNotes)) && (
+                      <button
+                        type="button"
+                        className={`${styles.rowActionBtn} ${styles.tooltipWrapper}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          if (
+                            hoveredTooltip?.rect.top === rect.top &&
+                            hoveredTooltip?.rect.left === rect.left
+                          ) {
+                            setHoveredTooltip(null);
+                          } else {
+                            setHoveredTooltip({
+                              rect,
+                              content: (
+                                <>
+                                  {transaction.userNotes && (
+                                    <div className={styles.userNote}>
+                                      <strong>{translation.notes}:</strong> {transaction.userNotes}
+                                    </div>
+                                  )}
+                                  {transaction.details && <div>{transaction.details}</div>}
+                                </>
+                              ),
+                            });
+                          }
+                        }}
+                        onMouseEnter={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
                           setHoveredTooltip({
                             rect,
                             content: (
@@ -150,109 +181,59 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
                               </>
                             ),
                           });
-                        }
-                      }}
-                      onMouseEnter={(e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        setHoveredTooltip({
-                          rect,
-                          content: (
-                            <>
-                              {transaction.userNotes && (
-                                <div className={styles.userNote}>
-                                  <strong>{translation.notes}:</strong> {transaction.userNotes}
-                                </div>
-                              )}
-                              {transaction.details && <div>{transaction.details}</div>}
-                            </>
-                          ),
-                        });
-                      }}
-                      onMouseLeave={() => setHoveredTooltip(null)}
-                      title={translation.transactionDetails}
-                      aria-label={translation.transactionDetails}
+                        }}
+                        onMouseLeave={() => setHoveredTooltip(null)}
+                        title={translation.transactionDetails}
+                        aria-label={translation.transactionDetails}
+                      >
+                        <Info size={13} className={styles.infoIcon} />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className={`${styles.rowActionBtn} ${styles.editIcon}`}
+                      onClick={() =>
+                        setEditState({
+                          transaction,
+                          field: 'notes',
+                          value: transaction.userNotes ?? '',
+                          applyToAll: false,
+                        })
+                      }
+                      title={translation.editNotes}
+                      aria-label={translation.editNotes}
                     >
-                      <Info size={13} className={styles.infoIcon} />
+                      <Pencil size={12} className={styles.editIconSvg} />
                     </button>
-                  )}
+                  </div>
+                </td>
+                <td className={styles.categoryCell}>
                   <button
                     type="button"
-                    className={`${styles.rowActionBtn} ${styles.editIcon}`}
+                    className={styles.categoryTag}
+                    style={getTagStyle(transaction.industry)}
                     onClick={() =>
                       setEditState({
                         transaction,
-                        field: 'notes',
-                        value: transaction.userNotes ?? '',
+                        field: 'category',
+                        value: transaction.industry,
                         applyToAll: false,
                       })
                     }
-                    title={translation.editNotes}
-                    aria-label={translation.editNotes}
+                    aria-label={`${translation.editCategory}: ${translateValue(transaction.industry)}`}
                   >
-                    <Pencil size={12} className={styles.editIconSvg} />
+                    {translateValue(transaction.industry)}
                   </button>
-                </div>
-              </td>
-              <td className={styles.categoryCell}>
-                <button
-                  type="button"
-                  className={styles.categoryTag}
-                  style={getTagStyle(transaction.industry)}
-                  onClick={() =>
-                    setEditState({
-                      transaction,
-                      field: 'category',
-                      value: transaction.industry,
-                      applyToAll: false,
-                    })
-                  }
-                  aria-label={`${translation.editCategory}: ${translateValue(transaction.industry)}`}
-                >
-                  {translateValue(transaction.industry)}
-                </button>
-              </td>
-              <td className={styles.amountCell}>
-                {transaction.originalAmount ? (
-                  <span
-                    className={styles.hasOriginalAmount}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`${translation.originalAmount}: ${transaction.originalAmount}`}
-                    onMouseEnter={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setHoveredTooltip({
-                        rect,
-                        content: (
-                          <div className={styles.originalAmountTooltip}>
-                            <strong>{translation.originalAmount}:</strong>{' '}
-                            {transaction.originalAmount}
-                          </div>
-                        ),
-                      });
-                    }}
-                    onMouseLeave={() => setHoveredTooltip(null)}
-                    onFocus={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setHoveredTooltip({
-                        rect,
-                        content: (
-                          <div className={styles.originalAmountTooltip}>
-                            <strong>{translation.originalAmount}:</strong>{' '}
-                            {transaction.originalAmount}
-                          </div>
-                        ),
-                      });
-                    }}
-                    onBlur={() => setHoveredTooltip(null)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      if (
-                        hoveredTooltip?.rect.top === rect.top &&
-                        hoveredTooltip?.rect.left === rect.left
-                      ) {
-                        setHoveredTooltip(null);
-                      } else {
+                </td>
+                <td className={styles.amountCell}>
+                  {transaction.originalAmount ? (
+                    <span
+                      className={styles.hasOriginalAmount}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`${translation.originalAmount}: ${transaction.originalAmount}`}
+                      onMouseEnter={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
                         setHoveredTooltip({
                           rect,
                           content: (
@@ -262,17 +243,51 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
                             </div>
                           ),
                         });
-                      }
-                    }}
-                  >
-                    {FORMAT_CURRENCY(transaction.debitAmount, currentLanguage)}
-                  </span>
-                ) : (
-                  FORMAT_CURRENCY(transaction.debitAmount, currentLanguage)
-                )}
-              </td>
-            </tr>
-          ))}
+                      }}
+                      onMouseLeave={() => setHoveredTooltip(null)}
+                      onFocus={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setHoveredTooltip({
+                          rect,
+                          content: (
+                            <div className={styles.originalAmountTooltip}>
+                              <strong>{translation.originalAmount}:</strong>{' '}
+                              {transaction.originalAmount}
+                            </div>
+                          ),
+                        });
+                      }}
+                      onBlur={() => setHoveredTooltip(null)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        if (
+                          hoveredTooltip?.rect.top === rect.top &&
+                          hoveredTooltip?.rect.left === rect.left
+                        ) {
+                          setHoveredTooltip(null);
+                        } else {
+                          setHoveredTooltip({
+                            rect,
+                            content: (
+                              <div className={styles.originalAmountTooltip}>
+                                <strong>{translation.originalAmount}:</strong>{' '}
+                                {transaction.originalAmount}
+                              </div>
+                            ),
+                          });
+                        }
+                      }}
+                    >
+                      {FORMAT_CURRENCY(transaction.debitAmount, currentLanguage)}
+                    </span>
+                  ) : (
+                    FORMAT_CURRENCY(transaction.debitAmount, currentLanguage)
+                  )}
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
 

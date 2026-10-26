@@ -291,6 +291,27 @@
   text-decoration-color: var(--color-primary);
 }
 
+.emptyCell {
+  padding-block: var(--spacing-10) !important;
+  padding-inline: var(--spacing-4) !important;
+  text-align: center !important;
+  border-block-end: none !important;
+}
+
+.emptyRowContent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.emptyRowContent .emptyIcon {
+  opacity: var(--opacity-dimmed);
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
   .table {

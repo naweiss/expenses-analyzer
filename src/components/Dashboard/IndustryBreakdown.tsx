@@ -31,6 +31,33 @@ const IndustryBreakdown: React.FC<IndustryBreakdownProps> = ({ data: industryDat
     return industry;
   };
 
+  if (activeIndustryData.length === 0) {
+    return (
+      <div className={styles.industryBreakdown}>
+        <div className={styles.pieContainer}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={100}>
+            <PieChart margin={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Pie
+                data={[{ value: 1 }]}
+                cx="50%"
+                cy="50%"
+                innerRadius={isMobile ? 50 : 60}
+                outerRadius={isMobile ? 70 : 80}
+                dataKey="value"
+                isAnimationActive={false}
+              >
+                <Cell fill="var(--color-border)" opacity={0.6} stroke="none" />
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className={styles.emptyChartNotice}>
+          <span>{translation.noIndustryData}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.industryBreakdown}>
       <div className={styles.pieContainer}>
